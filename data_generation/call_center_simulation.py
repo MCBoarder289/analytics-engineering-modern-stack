@@ -1,7 +1,6 @@
 import datetime
 import os
 import random
-from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import numpy as np
@@ -89,16 +88,26 @@ programs = {
     }
 }
 
-GLOBAL_START_DATE = date(2025, 1, 1)
-GLOBAL_END_DATE = date(2025, 3, 31)
+GLOBAL_START_DATE = datetime.date(2025, 1, 1)
+GLOBAL_END_DATE = datetime.date(2025, 3, 31)
 
 ### Helper function to simulate call reasons
 def get_call_reasons_plus_duration(program_key: str, reason: str | None = None, subreason: str | None = None):
     if reason and subreason:
-        reason_record = [reason_record for reason_record in programs[program_key]["reasons"] if reason_record["name"] == reason][0]
-        subreason_record = [subreason_record for subreason_record in reason_record["sub_reasons"] if subreason_record["name"] == subreason][0]
+        reason_record = [
+            reason_record
+            for reason_record in programs[program_key]["reasons"]
+            if reason_record["name"] == reason
+        ][0]
+        subreason_record = [
+            subreason_record
+            for subreason_record in reason_record["sub_reasons"]
+            if subreason_record["name"] == subreason
+        ][0]
 
-        duration = max(MIN_CALL_LENGTH, int(np.random.normal(subreason_record["duration_mean"], subreason_record["duration_std"])))
+        duration = max(
+            MIN_CALL_LENGTH, int(np.random.normal(subreason_record["duration_mean"], subreason_record["duration_std"]))
+        )
 
         return reason, subreason, duration
     else:
@@ -191,8 +200,8 @@ def generate_managers(num_managers: int) -> pd.DataFrame:
 def distribute_agents_to_managers(
     agents: pd.DataFrame,
     managers: pd.DataFrame,
-    start_date: date,
-    end_date: date,
+    start_date: datetime.date,
+    end_date: datetime.date,
     avg_reassignments: int = 2,
 ) -> pd.DataFrame:
     """Distribute agents to managers with effective date ranges and reassignments."""
@@ -221,7 +230,7 @@ def distribute_agents_to_managers(
                     "agent_id": agent["agent_id"],
                     "manager_id": manager_id,
                     "effective_start": current_start,
-                    "effective_end": change_date - timedelta(days=1),
+                    "effective_end": change_date - datetime.timedelta(days=1),
                 }
             )
 
@@ -283,7 +292,7 @@ def simulate_hold_time(rng: np.random.Generator) -> int:
     return int(np.clip(rng.normal(45, 20), 0, 300))
 
 
-def write_daily_parquet(records: list[dict], output_dir: str, table: str, date: date):
+def write_daily_parquet(records: list[dict], output_dir: str, table: str, date: datetime.date):
     """Write records to parquet, partitioned by day."""
     if not records:
         return
@@ -325,7 +334,9 @@ def simulate_call_center(rng: np.random.Generator, output_dir="data"):
         for _, agent_id in agents["agent_id"].items():
             print(f"Agent ID: {agent_id}")
             n_calls = int(CALLS_PER_AGENT_PER_DAY * volume_mult)
-            start_time = datetime.combine(day_date, datetime.min.time()) + timedelta(hours=WORKDAY_START)
+            start_time = datetime.datetime.combine(day_date, datetime.datetime.min.time()) + datetime.timedelta(
+                hours=WORKDAY_START
+            )
 
             agent_callbacks = [cb for cb in todays_callbacks if cb["agent_id"] == agent_id]
             work_items = ["new"] * n_calls + agent_callbacks
@@ -345,8 +356,8 @@ def simulate_call_center(rng: np.random.Generator, output_dir="data"):
                     previous_issue_flag = False
 
                 hold_time = simulate_hold_time(rng)
-                start_ts = start_time + timedelta(seconds=hold_time)
-                end_ts = start_ts + timedelta(seconds=duration)
+                start_ts = start_time + datetime.timedelta(seconds=hold_time)
+                end_ts = start_ts + datetime.timedelta(seconds=duration)
 
                 # Stop work items if there isn't enough time in workday
                 if end_ts.hour >= WORKDAY_END:
@@ -388,7 +399,7 @@ def simulate_call_center(rng: np.random.Generator, output_dir="data"):
 
                 if rng.random() < SURVEY_RATE:
                     survey_id_counter += 1
-                    response_ts = end_ts + timedelta(days=float(rng.integers(0, 4)))
+                    response_ts = end_ts + datetime.timedelta(days=float(rng.integers(0, 4)))
                     csat = int(np.clip(rng.normal(4 if not transfer and hold_time < 60 else 3, 1), 1, 5))
                     nps = int(
                         np.clip(
@@ -402,7 +413,7 @@ def simulate_call_center(rng: np.random.Generator, output_dir="data"):
                         "call_id": call_id,
                         "agent_id": agent_id,
                         "customer_id": customer["customer_id"].item(),
-                        "sent_ts": end_ts + timedelta(minutes=5),
+                        "sent_ts": end_ts + datetime.timedelta(minutes=5),
                         "response_ts": response_ts,
                         "csat": csat,
                         "nps": nps,
@@ -412,7 +423,7 @@ def simulate_call_center(rng: np.random.Generator, output_dir="data"):
 
                 if item == "new" and rng.random() < CALLBACK_RATE:
                     days_out = int(rng.integers(1, 6))
-                    future_day = day_date + timedelta(days=days_out)
+                    future_day = day_date + datetime.timedelta(days=days_out)
                     if future_day < GLOBAL_END_DATE:
                         cb_agent = agents[agents["agent_id"] != agent_id].sample(1)
                         pending_callbacks.append({
@@ -440,7 +451,7 @@ simulate_call_center(rng=np.random.default_rng(289))
 # using the "check" strategy because I don't want to manage shuffling/shifting the updated_at times.
 # That will just be done when hydrating each particular assignment/exercise.
 
-# Snapshots will be harder to implement because they use the actual runtime date to establish to temporality/effective dates
+# Snapshots will be harder to implement because they use the actual runtime date to establish to effective dates
 # So I'll need to generate the agent/manager relationship separately.
 
 

@@ -8,8 +8,15 @@ wheels/
 
 # Virtual environments
 .venv
-.python-version
+.python-version.bak
+.bak
 
 #lockfiles to prevent conflicts
 uv.lock
+
+# IDE files
+.idea
+
+.DS_Store
+
 
