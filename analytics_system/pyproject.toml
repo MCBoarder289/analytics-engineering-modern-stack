@@ -29,4 +29,23 @@ registry_modules = [
     "analytics_system.components.*",
 ]
 
+[tool.ruff.lint]
+select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    # isort
+    "I",
+]
+[tool.ruff]
+line-length = 120
+
+
 
