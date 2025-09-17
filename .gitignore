@@ -15,8 +15,10 @@ wheels/
 uv.lock
 
 # IDE files
-.idea
+.idea/
+.vscode/
 
 .DS_Store
 
+data/
 

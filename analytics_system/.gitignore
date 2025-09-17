@@ -201,3 +201,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# backup files
+*.bak
+
+# data locations
+.data/
