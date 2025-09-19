@@ -205,5 +205,6 @@ __marimo__/
 # backup files
 *.bak
 
-# data locations
-.data/
+# dagster home default
+.dagster_home/*
+!.dagster_home/dagster.yaml

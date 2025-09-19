@@ -23,3 +23,41 @@ After setting up the primary data model, the next steps will follow the DAG line
   * Injecting scenarios to work around:
     * Duplicate data
     * Errors, etc.
+
+## Managing Environments
+
+### Setting up Dagster
+You need to make your Dagster environment persistent so that when you run assets/pipelines, those states are saved.
+To do this, you need to copy the `.env.example` file to a `.env` files and update the path to be the specific location.
+
+There is a helper function to do this for you:
+```bash
+uv run python manage.py init-env
+```
+If there is a .env file present, it will ask if you want to overwrite it.
+
+### Cleaning up and resetting environment
+
+Because this project runs locally, there may be times when you need to clear things out and start fresh.
+The following commands should help you reset state for the various components (dlt state, warehouse state, dagster state, etc.)
+You need to run these commands from the root of this project.
+
+### Clear dagster state
+```bash
+uv run python manage.py reset-dagster
+```
+
+### Clear dlt state
+```bash
+uv run python manage.py reset-dlt
+```
+
+### Clear warehouse state
+```bash
+uv run python manage.py reset-warehouse
+```
+
+### Clear all state
+```bash
+uv run python manage.py reset-all
+```

@@ -1,0 +1,7 @@
+concurrency:
+  pools:
+    default_limit: 1
+
+telemetry:
+  enabled: false
+

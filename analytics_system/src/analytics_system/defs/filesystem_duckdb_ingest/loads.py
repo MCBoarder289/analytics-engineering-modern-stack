@@ -6,7 +6,13 @@ from dagster import AssetExecutionContext, BackfillPolicy, DailyPartitionsDefini
 from dagster_dlt import DagsterDltResource, dlt_assets
 from dlt.sources.filesystem import filesystem, read_parquet
 
-from analytics_system.constants import SOURCE_DATA_DIR_PATH, WAREHOUSE_FILE_ABS_PATH
+from analytics_system.constants import (
+    DLT_STATE_LOCATION_ABS_PATH,
+    INGEST_CALLS_ABS_PATH,
+    INGEST_CRM_ABS_PATH,
+    INGEST_SURVEYS_ABS_PATH,
+    SOURCE_DATA_DIR_PATH,
+)
 
 daily_partitions = DailyPartitionsDefinition("2025-01-01", "2025-03-31")
 
@@ -52,12 +58,14 @@ def filesystem_surveys_source(date_partition: Optional[str] = None):
     name="calls_ingestion_assets",
     dlt_pipeline=dlt.pipeline(
         pipeline_name="raw_calls_ingestion",
+        pipelines_dir=DLT_STATE_LOCATION_ABS_PATH,
         dataset_name="raw_calls",
-        destination=dlt.destinations.duckdb(WAREHOUSE_FILE_ABS_PATH)
+        destination=dlt.destinations.duckdb(INGEST_CALLS_ABS_PATH),
     ),
     partitions_def=daily_partitions,
     backfill_policy=BackfillPolicy.multi_run(),
     group_name="raw_ingestion",
+    pool="duckdb_ingest_calls",
 )
 def calls_ingestion(context: AssetExecutionContext, dlt: DagsterDltResource):
     date = context.partition_key
@@ -69,12 +77,14 @@ def calls_ingestion(context: AssetExecutionContext, dlt: DagsterDltResource):
     name="crm_ingestion_assets",
     dlt_pipeline=dlt.pipeline(
         pipeline_name="raw_crm_ingestion",
+        pipelines_dir=DLT_STATE_LOCATION_ABS_PATH,
         dataset_name="raw_crm",
-        destination=dlt.destinations.duckdb(WAREHOUSE_FILE_ABS_PATH)
+        destination=dlt.destinations.duckdb(INGEST_CRM_ABS_PATH)
     ),
     partitions_def=daily_partitions,
     backfill_policy=BackfillPolicy.multi_run(),
     group_name="raw_ingestion",
+    pool="duckdb_ingest_crm",
 )
 def crm_ingestion(context: AssetExecutionContext, dlt: DagsterDltResource):
     date = context.partition_key
@@ -86,13 +96,14 @@ def crm_ingestion(context: AssetExecutionContext, dlt: DagsterDltResource):
     name="survey_ingestion_assets",
     dlt_pipeline=dlt.pipeline(
         pipeline_name="raw_surveys_ingestion",
-        # TODO: add pipelines_dir to place dlt state somewhere that makes sense
+        pipelines_dir=DLT_STATE_LOCATION_ABS_PATH,
         dataset_name="raw_surveys",
-        destination=dlt.destinations.duckdb(WAREHOUSE_FILE_ABS_PATH)
+        destination=dlt.destinations.duckdb(INGEST_SURVEYS_ABS_PATH),
     ),
     partitions_def=daily_partitions,
     backfill_policy=BackfillPolicy.multi_run(),
     group_name="raw_ingestion",
+    pool="duckdb_ingest_surveys",
 )
 def surveys_ingestion(context: AssetExecutionContext, dlt: DagsterDltResource):
     date = context.partition_key
@@ -111,6 +122,11 @@ def surveys_ingestion(context: AssetExecutionContext, dlt: DagsterDltResource):
 # I was able to re-run the failed paritions, and all but one failed, but that certainly caused dupes in the source data
 # It was nice to know that dagster pretty gracefully only ran jobs for failed partitions within each source, which in
 # theory should not have produced dupes from the source, but I bet some of the partition ranges overlapped or something?
+
+# Putting them on pools and making the pool limit value 1 made this complete successfully without the write errors.
+# Removing concurrency increased the pipeline time to bout 8.5 minutes for the entire dataset (not great).
+# This requires going into the UI because you can't set that in the dagster.yaml, except for a default for all
+
 
 
 

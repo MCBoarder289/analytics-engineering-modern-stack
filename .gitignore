@@ -21,4 +21,4 @@ uv.lock
 .DS_Store
 
 data/
-
+.dlt/
