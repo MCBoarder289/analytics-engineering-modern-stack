@@ -266,6 +266,11 @@ agent_assignments = distribute_agents_to_managers(
 )
 customers = generate_customers(num_customers=1500)
 
+## Write out customers, managers, and assignments csv files for dbt seed
+agents.to_csv("../call_center/seeds/agents.csv", index=False, header=True)
+managers.to_csv("../call_center/seeds/managers.csv", index=False, header=True)
+agent_assignments.to_csv("../call_center/seeds/agent_assignments.csv", index=False, header=True)
+
 
 ### FULL SIMULATION
 CALLS_PER_AGENT_PER_DAY = 60

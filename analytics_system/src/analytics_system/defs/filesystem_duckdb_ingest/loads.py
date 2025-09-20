@@ -1,5 +1,4 @@
 import os
-from typing import Optional
 
 import dlt
 from dagster import AssetExecutionContext, BackfillPolicy, DailyPartitionsDefinition
@@ -25,7 +24,7 @@ def parquet_day_partition(dataset: str, date_partition: str):
 
 
 @dlt.source
-def filesystem_calls_source(date_partition: Optional[str] = None):
+def filesystem_calls_source(date_partition: str | None = None):
     @dlt.resource
     def calls():
         if date_partition:
@@ -35,7 +34,7 @@ def filesystem_calls_source(date_partition: Optional[str] = None):
 
 
 @dlt.source
-def filesystem_crm_source(date_partition: Optional[str] = None):
+def filesystem_crm_source(date_partition: str | None = None):
     @dlt.resource
     def crm():
         if date_partition:
@@ -44,7 +43,7 @@ def filesystem_crm_source(date_partition: Optional[str] = None):
     return crm
 
 @dlt.source
-def filesystem_surveys_source(date_partition: Optional[str] = None):
+def filesystem_surveys_source(date_partition: str | None = None):
     @dlt.resource
     def surveys():
         if date_partition:
@@ -110,6 +109,22 @@ def surveys_ingestion(context: AssetExecutionContext, dlt: DagsterDltResource):
     yield from dlt.run(context=context, dlt_source=filesystem_surveys_source(date_partition=date))
 
 
+## Discover Asset Keys
+# Default conventions seems to be "dlt_<dlt_source_function_name>_<dlt_resource_function_name>"
+#
+# ASSET KEY: ['dlt_filesystem_calls_source_calls']
+# ASSET KEY: ['dlt_filesystem_crm_source_crm']
+# ASSET KEY: ['dlt_filesystem_surveys_source_surveys']
+
+# for asset_key in calls_ingestion.keys:
+#     print(f"ASSET KEY: {asset_key.path}")
+#
+# for asset_key in crm_ingestion.keys:
+#     print(f"ASSET KEY: {asset_key.path}")
+#
+# for asset_key in surveys_ingestion.keys:
+#     print(f"ASSET KEY: {asset_key.path}")
+#
 # TODO: Configure concurrency so that it doesn't fail.
 # Concurrency notes: I was able to materialize all 89 partitions of a single asset pretty easily without any
 # concurrency limits. However, when I tried to backfill all 3 for all the same partitions, I ran into
@@ -139,7 +154,7 @@ def surveys_ingestion(context: AssetExecutionContext, dlt: DagsterDltResource):
 # pipeline = dlt.pipeline(
 #     pipeline_name="raw_calls_ingestion",
 #     dataset_name="raw_calls",
-#     destination=dlt.destinations.duckdb(WAREHOUSE_FILE_ABS_PATH),
+#     destination=dlt.destinations.duckdb(INGEST_CALLS_ABS_PATH),
 # )
 #
 # load_info = pipeline.run(filesystem_calls_source(date_partition="2025-01-01"))
@@ -148,7 +163,7 @@ def surveys_ingestion(context: AssetExecutionContext, dlt: DagsterDltResource):
 # pipeline = dlt.pipeline(
 #     pipeline_name="raw_crm_ingestion",
 #     dataset_name="raw_crm",
-#     destination=dlt.destinations.duckdb(WAREHOUSE_FILE_ABS_PATH),
+#     destination=dlt.destinations.duckdb(INGEST_CRM_ABS_PATH),
 # )
 #
 # load_info = pipeline.run(filesystem_crm_source(date_partition="2025-01-01"))
@@ -157,7 +172,7 @@ def surveys_ingestion(context: AssetExecutionContext, dlt: DagsterDltResource):
 # pipeline = dlt.pipeline(
 #     pipeline_name="raw_surveys_ingestion",
 #     dataset_name="raw_surveys",
-#     destination=dlt.destinations.duckdb(WAREHOUSE_FILE_ABS_PATH),
+#     destination=dlt.destinations.duckdb(INGEST_SURVEYS_ABS_PATH),
 # )
 #
 # load_info = pipeline.run(filesystem_surveys_source(date_partition="2025-01-01"))

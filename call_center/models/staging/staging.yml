@@ -1,0 +1,111 @@
+version: 2
+
+models:
+  - name: stg_calls
+    description: ""
+    columns:
+      - name: call_id
+        data_type: bigint
+        description: ""
+
+      - name: agent_id
+        data_type: bigint
+        description: ""
+
+      - name: customer_id
+        data_type: bigint
+        description: ""
+
+      - name: queue_hold_time
+        data_type: bigint
+        description: ""
+
+      - name: start_ts
+        data_type: timestamp with time zone
+        description: ""
+
+      - name: end_ts
+        data_type: timestamp with time zone
+        description: ""
+
+      - name: duration_s
+        data_type: bigint
+        description: ""
+
+      - name: hold_time_during_call_s
+        data_type: bigint
+        description: ""
+
+      - name: transfer_flag
+        data_type: boolean
+        description: ""
+
+  - name: stg_crm
+    description: ""
+    columns:
+      - name: crm_id
+        data_type: bigint
+        description: ""
+
+      - name: agent_id
+        data_type: bigint
+        description: ""
+
+      - name: call_id
+        data_type: bigint
+        description: ""
+
+      - name: customer_id
+        data_type: bigint
+        description: ""
+
+      - name: reason_code
+        data_type: varchar
+        description: ""
+
+      - name: sub_reason_code
+        data_type: varchar
+        description: ""
+
+      - name: previous_issue_flag
+        data_type: boolean
+        description: ""
+
+      - name: created_ts
+        data_type: timestamp with time zone
+        description: ""
+
+  - name: stg_surveys
+    description: ""
+    columns:
+      - name: survey_id
+        data_type: bigint
+        description: ""
+
+      - name: call_id
+        data_type: bigint
+        description: ""
+
+      - name: agent_id
+        data_type: bigint
+        description: ""
+
+      - name: customer_id
+        data_type: bigint
+        description: ""
+
+      - name: sent_ts
+        data_type: timestamp with time zone
+        description: ""
+
+      - name: response_ts
+        data_type: timestamp with time zone
+        description: ""
+
+      - name: csat
+        data_type: bigint
+        description: ""
+
+      - name: nps
+        data_type: bigint
+        description: ""

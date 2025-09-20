@@ -22,3 +22,6 @@ uv.lock
 
 data/
 .dlt/
+
+# dbt created logs
+logs/

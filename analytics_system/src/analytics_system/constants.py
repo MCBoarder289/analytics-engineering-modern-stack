@@ -18,6 +18,6 @@ INGEST_CALLS_ABS_PATH = os.path.abspath(warehouse_dir / "ingest_calls.duckdb")
 INGEST_CRM_ABS_PATH = os.path.abspath(warehouse_dir / "ingest_crm.duckdb")
 INGEST_SURVEYS_ABS_PATH = os.path.abspath(warehouse_dir / "ingest_surveys.duckdb")
 
-WAREHOUSE_FILE_ABS_PATH = os.path.abspath(warehouse_dir / "data_warehouse.duckdb")
+WAREHOUSE_FILE_ABS_PATH = os.path.abspath(warehouse_dir / "warehouse_dev.duckdb")
 
 SOURCE_DATA_DIR_PATH = pathlib.Path(__file__).parent.parent.parent.parent.resolve() / "data"

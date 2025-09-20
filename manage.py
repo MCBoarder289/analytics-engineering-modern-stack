@@ -3,6 +3,8 @@ import argparse
 import shutil
 from pathlib import Path
 
+import duckdb
+
 BASE_DIR = Path(__file__).parent.resolve()
 DAGSTER_HOME = BASE_DIR / "analytics_system" / ".dagster_home"
 DLT_DIR = BASE_DIR / ".dlt"
@@ -10,7 +12,9 @@ WAREHOUSE_DIR = BASE_DIR / "data" / "warehouse"
 ENV_EXAMPLE = BASE_DIR / "analytics_system" / ".env.example"
 ENV_FILE = BASE_DIR / "analytics_system" / ".env"
 
-
+INGEST_CALLS_WAREHOUSE = WAREHOUSE_DIR / "ingest_calls.duckdb"
+INGEST_CRM_WAREHOUSE = WAREHOUSE_DIR / "ingest_crm.duckdb"
+INGEST_SURVEYS_WAREHOUSE = WAREHOUSE_DIR / "ingest_surveys.duckdb"
 
 def init_env():
     if not ENV_EXAMPLE.exists():
@@ -32,6 +36,13 @@ def init_env():
 
     ENV_FILE.write_text(content)
     print(f"Created {ENV_FILE} with DAGSTER_HOME={DAGSTER_HOME.resolve()}")
+
+    print("Creating duckdb warehouse placeholders...")
+
+    for location in [INGEST_CALLS_WAREHOUSE, INGEST_CRM_WAREHOUSE, INGEST_SURVEYS_WAREHOUSE]:
+        con = duckdb.connect(database=str(location))
+        con.close()
+        print(f"Created {location}")
 
 
 def _confirm_and_delete(path: Path, preserve=None):
@@ -98,7 +109,6 @@ def main():
         reset_all()
     elif args.command == "init-env":
         init_env()
-
 
 
 if __name__ == "__main__":

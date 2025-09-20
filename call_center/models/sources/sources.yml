@@ -1,0 +1,39 @@
+version: 2
+
+sources:
+  - name: ingest_calls
+    database: ingest_calls
+    schema: raw_calls
+    tables:
+      - name: _dlt_loads
+      - name: _dlt_pipeline_state
+      - name: _dlt_version
+      - name: calls
+        meta:
+          dagster:
+            asset_key: ['dlt_filesystem_calls_source_calls']
+
+  - name: ingest_crm
+    database: ingest_crm
+    schema: raw_crm
+    tables:
+      - name: _dlt_loads
+      - name: _dlt_pipeline_state
+      - name: _dlt_version
+      - name: crm
+        meta:
+          dagster:
+            asset_key: ['dlt_filesystem_crm_source_crm']
+
+  - name: ingest_surveys
+    database: ingest_surveys
+    schema: raw_surveys
+    tables:
+      - name: _dlt_loads
+      - name: _dlt_pipeline_state
+      - name: _dlt_version
+      - name: surveys
+        meta:
+          dagster:
+            asset_key: ['dlt_filesystem_surveys_source_surveys']
+      
