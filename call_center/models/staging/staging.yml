@@ -5,6 +5,9 @@ models:
     description: ""
     columns:
       - name: call_id
+        data_tests:
+          - unique
+          - not_null
         data_type: bigint
         description: ""
 
@@ -44,6 +47,9 @@ models:
     description: ""
     columns:
       - name: crm_id
+        data_tests:
+          - unique
+          - not_null
         data_type: bigint
         description: ""
 
@@ -79,6 +85,9 @@ models:
     description: ""
     columns:
       - name: survey_id
+        data_tests:
+          - unique
+          - not_null
         data_type: bigint
         description: ""
 
