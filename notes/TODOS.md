@@ -42,3 +42,9 @@ Here's how the .dbt folder and profiles.yml are created:
   * [see source code link](https://github.com/dagster-io/dagster/blob/fedf5745ba90331eb99485832a41171f21f123b5/python_modules/libraries/dagster-dbt/dagster_dbt/components/dbt_project/component.py#L139)
   * This looks like a similar issue: [Link](https://github.com/dagster-io/dagster/discussions/21574)
     * Initial trial didn't work...
+  * notes on dagster dbt components:
+    * what is possible [Link](https://docs.dagster.io/guides/build/components/building-pipelines-with-components/post-processing-components)
+  * Might need to switch to the pythonic way of creating the dbt project:
+    * https://docs.dagster.io/integrations/libraries/dbt/dbt-pythonic 
+    * https://docs.dagster.io/api/libraries/dagster-dbt#dbt-core
+      * See "prepare_if_dev" to ensure changes to dbt get refreshed when running dg dev
