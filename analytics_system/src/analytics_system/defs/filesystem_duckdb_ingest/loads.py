@@ -7,13 +7,15 @@ from dlt.sources.filesystem import filesystem, read_parquet
 
 from analytics_system.constants import (
     DLT_STATE_LOCATION_ABS_PATH,
+    GLOBAL_END_DATE,
+    GLOBAL_START_DATE,
     INGEST_CALLS_ABS_PATH,
     INGEST_CRM_ABS_PATH,
     INGEST_SURVEYS_ABS_PATH,
     SOURCE_DATA_DIR_PATH,
 )
 
-daily_partitions = DailyPartitionsDefinition("2025-01-01", "2025-03-31")
+daily_partitions = DailyPartitionsDefinition(start_date=GLOBAL_START_DATE, end_date=GLOBAL_END_DATE)
 
 def parquet_day_partition(dataset: str, date_partition: str):
     """Helper function to dynamically produce the boilerplate glob access of the raw source files"""

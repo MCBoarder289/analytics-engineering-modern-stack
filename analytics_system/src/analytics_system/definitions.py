@@ -9,7 +9,7 @@ dlt_resource = DagsterDltResource()
 
 @definitions
 def defs():
-    default_defs = load_from_defs_folder(path_within_project=Path(__file__).parent)
+    default_defs = load_from_defs_folder(project_root=Path(__file__).parent.parent.parent)
 
     dlt_defs = Definitions(
         assets=[
@@ -22,4 +22,4 @@ def defs():
         }
     )
 
-    return default_defs.merge(dlt_defs)
+    return Definitions.merge(default_defs, dlt_defs)

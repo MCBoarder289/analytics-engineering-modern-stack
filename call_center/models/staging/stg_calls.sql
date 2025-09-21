@@ -12,7 +12,7 @@ with source as (
     from {{ source('ingest_calls', 'calls') }}
     {# In the incremental block, can add a lookback window that will subtract x days fromt the start date #}
     {% if is_incremental() %}
-        where start_ts between '{{ var("min_date") }}' and '{{ var("max_date") }}' 
+        where start_ts between '{{ var("start_date") }}' and '{{ var("end_date") }}' 
     {% endif %}
   ),
   {# This is a good example to have students handle de-duplication here vs. in ingest #}

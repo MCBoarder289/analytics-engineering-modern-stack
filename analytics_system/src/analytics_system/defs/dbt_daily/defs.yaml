@@ -1,0 +1,21 @@
+type: dagster_dbt.DbtProjectComponent
+
+template_vars_module: .template_vars
+
+attributes:
+  project: '{{ project_root }}/../call_center'
+  # Note: couldn't do multiple project components separated by --- because I kept getting
+  translation:
+    group_name: dbt_daily
+    description: "Transforms data using dbt model {{ node.name }}"
+  cli_args:
+    - build
+    - --vars:  # Couldn't do the multiple items below this - kept running into an error: dagster_shared.check.functions.CheckError: Invariant failed. Description: Invalid cli args dict, must have exactly one key
+        "{%- if partition_time_window -%}{{ {'start_date': partition_time_window.start.strftime('%Y-%m-%d'), 'end_date': partition_time_window.end.strftime('%Y-%m-%d')} | tojson }}{%- else -%}{}{%- endif -%}"
+
+post_processing:
+  assets:
+    - target: "tag:daily"  # tag all daily partitioned models to get this definition. Seeds will not have this tag.
+      attributes:
+        partitions_def: "{{ daily_partitions_def }}"
+

@@ -16,9 +16,16 @@ INGEST_CALLS_WAREHOUSE = WAREHOUSE_DIR / "ingest_calls.duckdb"
 INGEST_CRM_WAREHOUSE = WAREHOUSE_DIR / "ingest_crm.duckdb"
 INGEST_SURVEYS_WAREHOUSE = WAREHOUSE_DIR / "ingest_surveys.duckdb"
 
+PROFILES_YAML_EXAMPLE = BASE_DIR / "call_center" / "profiles.yml.example"
+DEV_WAREHOUSE_PATH = WAREHOUSE_DIR / "warehouse_dev.duckdb"
+
 def init_env():
     if not ENV_EXAMPLE.exists():
         print(f"{ENV_EXAMPLE} does not exist. Cannot create .env.")
+        return
+
+    if not PROFILES_YAML_EXAMPLE.exists():
+        print(f"{PROFILES_YAML_EXAMPLE} does not exist. Cannot create .env.")
         return
 
     # Read the example file
@@ -33,6 +40,8 @@ def init_env():
         if confirm.lower() != "y":
             print("Aborting .env creation.")
             return
+
+    # TODO: add content replacing for the profiles.yml file
 
     ENV_FILE.write_text(content)
     print(f"Created {ENV_FILE} with DAGSTER_HOME={DAGSTER_HOME.resolve()}")

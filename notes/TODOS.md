@@ -33,3 +33,12 @@ Here's how the .dbt folder and profiles.yml are created:
 ### Update dbt docs
 * need to update docs to have the vars for incremental models
 * need to update the source columns to match source tables in the sources.yml file
+
+### dbt issues
+* dealing with seeds with no partitions vs. partitions
+  * Was able to solve this with a hacky single json partition (this is likely a bug in dagster)
+* Ran into failures running backfills on dbt assets (write conflicts in duckdb)
+  * maybe this should be solved via op tags? 
+  * [see source code link](https://github.com/dagster-io/dagster/blob/fedf5745ba90331eb99485832a41171f21f123b5/python_modules/libraries/dagster-dbt/dagster_dbt/components/dbt_project/component.py#L139)
+  * This looks like a similar issue: [Link](https://github.com/dagster-io/dagster/discussions/21574)
+    * Initial trial didn't work...

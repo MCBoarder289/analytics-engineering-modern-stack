@@ -2,7 +2,7 @@
 
 {{ config(
     materialized='incremental',
-    unique_key='call_id',
+    unique_key='crm_id',
     incremental_strategy='delete+insert',
     tags=["daily"]
 ) }}
@@ -12,7 +12,7 @@ with source as (
     from {{ source('ingest_crm', 'crm') }}
     {# In the incremental block, can add a lookback window that will subtract x days fromt the start date #}
     {% if is_incremental() %}
-        where created_ts between '{{ var("min_date") }}' and '{{ var("max_date") }}' 
+        where created_ts between '{{ var("start_date") }}' and '{{ var("end_date") }}' 
     {% endif %}
   ),
   {# This is a good example to have students handle de-duplication here vs. in ingest #}

@@ -2,7 +2,7 @@
 
 {{ config(
     materialized='incremental',
-    unique_key='call_id',
+    unique_key='survey_id',
     incremental_strategy='delete+insert',
     tags=["daily"]
 ) }}
@@ -12,7 +12,9 @@ with source as (
     from {{ source('ingest_surveys', 'surveys') }}
     {# In the incremental block, can add a lookback window that will subtract x days fromt the start date #}
     {% if is_incremental() %}
-        where response_ts between '{{ var("min_date") }}' and '{{ var("max_date") }}' 
+        where response_ts between 
+        cast(date_add(DATE '{{ var("start_date") }}', -{{ var("lookback_days", 5) }}) as date)
+            and DATE '{{ var("end_date") }}' 
     {% endif %}
   ),
   {# This is a good example to have students handle de-duplication here vs. in ingest #}
