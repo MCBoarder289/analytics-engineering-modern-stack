@@ -17,15 +17,14 @@ INGEST_CRM_WAREHOUSE = WAREHOUSE_DIR / "ingest_crm.duckdb"
 INGEST_SURVEYS_WAREHOUSE = WAREHOUSE_DIR / "ingest_surveys.duckdb"
 
 PROFILES_YAML_EXAMPLE = BASE_DIR / "call_center" / "profiles.yml.example"
+PROFILES_YAML_FILE = BASE_DIR / "call_center" / "profiles.yml"
+
 DEV_WAREHOUSE_PATH = WAREHOUSE_DIR / "warehouse_dev.duckdb"
+PROD_WAREHOUSE_PATH = WAREHOUSE_DIR / "warehouse_prod.duckdb"
 
 def init_env():
     if not ENV_EXAMPLE.exists():
         print(f"{ENV_EXAMPLE} does not exist. Cannot create .env.")
-        return
-
-    if not PROFILES_YAML_EXAMPLE.exists():
-        print(f"{PROFILES_YAML_EXAMPLE} does not exist. Cannot create .env.")
         return
 
     # Read the example file
@@ -37,21 +36,56 @@ def init_env():
     # Write to .env, but don't overwrite unless confirmed
     if ENV_FILE.exists():
         confirm = input(f"{ENV_FILE} already exists. Overwrite? [y/N]: ").strip().lower()
-        if confirm.lower() != "y":
+        if confirm != "y":
             print("Aborting .env creation.")
             return
-
-    # TODO: add content replacing for the profiles.yml file
 
     ENV_FILE.write_text(content)
     print(f"Created {ENV_FILE} with DAGSTER_HOME={DAGSTER_HOME.resolve()}")
 
     print("Creating duckdb warehouse placeholders...")
 
-    for location in [INGEST_CALLS_WAREHOUSE, INGEST_CRM_WAREHOUSE, INGEST_SURVEYS_WAREHOUSE]:
+    for location in [
+        INGEST_CALLS_WAREHOUSE,
+        INGEST_CRM_WAREHOUSE,
+        INGEST_SURVEYS_WAREHOUSE,
+        DEV_WAREHOUSE_PATH,
+        PROD_WAREHOUSE_PATH,
+    ]:
         con = duckdb.connect(database=str(location))
         con.close()
         print(f"Created {location}")
+
+    if not PROFILES_YAML_EXAMPLE.exists():
+        print(f"{PROFILES_YAML_EXAMPLE} does not exist. Cannot create profiles.yml.")
+        return
+
+    content = PROFILES_YAML_EXAMPLE.read_text()
+    content = content.replace(
+        "/path/to/analytics-engineering-modern-stack/data/warehouse/warehouse_dev.duckdb",
+        str(DEV_WAREHOUSE_PATH.resolve()),
+    ).replace(
+        "/path/to/analytics-engineering-modern-stack/data/warehouse/warehouse_prod.duckdb",
+        str(PROD_WAREHOUSE_PATH.resolve()),
+    ).replace(
+        "/path/to/analytics-engineering-modern-stack/data/warehouse/ingest_calls.duckdb",
+        str(INGEST_CALLS_WAREHOUSE.resolve()),
+    ).replace(
+        "/path/to/analytics-engineering-modern-stack/data/warehouse/ingest_crm.duckdb",
+        str(INGEST_CRM_WAREHOUSE.resolve())
+    ).replace(
+        "/path/to/analytics-engineering-modern-stack/data/warehouse/ingest_surveys.duckdb",
+        str(INGEST_SURVEYS_WAREHOUSE.resolve())
+    )
+
+    if PROFILES_YAML_FILE.exists():
+        confirm = input(f"{PROFILES_YAML_FILE} already exists. Overwrite? [y/N]: ").strip().lower()
+        if confirm != "y":
+            print("Aborting profiles.yml creation.")
+            return
+
+    PROFILES_YAML_FILE.write_text(content)
+    print(f"Created {PROFILES_YAML_FILE} with local warehouses.")
 
 
 def _confirm_and_delete(path: Path, preserve=None):

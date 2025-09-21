@@ -1,0 +1,12 @@
+groups:
+  - name: seed_data
+    owner: 
+      name: "Student"
+
+  - name: staging_data
+    owner:
+      name: "Student"
+
+  - name: analytics
+    owner:
+      name: "Student"

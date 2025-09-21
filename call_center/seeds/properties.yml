@@ -1,0 +1,12 @@
+seeds:
+  - name: agent_assignments
+    config:
+      group: seed_data
+
+  - name: agents
+    config:
+      group: seed_data
+
+  - name: managers
+    config:
+      group: seed_data

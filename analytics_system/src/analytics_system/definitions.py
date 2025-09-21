@@ -1,15 +1,18 @@
-from pathlib import Path
 
-from dagster import Definitions, definitions, load_from_defs_folder
+
+from dagster import Definitions, definitions
+from dagster_dbt import DbtCliResource
 from dagster_dlt import DagsterDltResource
 
+from .constants import dbt_project_dir
+from .defs.dbt_assets.assets import dbt_analytics, dbt_seeds
 from .defs.filesystem_duckdb_ingest.loads import calls_ingestion, crm_ingestion, surveys_ingestion
 
 dlt_resource = DagsterDltResource()
+dbt_resource = DbtCliResource(project_dir=dbt_project_dir)
 
 @definitions
 def defs():
-    default_defs = load_from_defs_folder(project_root=Path(__file__).parent.parent.parent)
 
     dlt_defs = Definitions(
         assets=[
@@ -22,4 +25,14 @@ def defs():
         }
     )
 
-    return Definitions.merge(default_defs, dlt_defs)
+    dbt_defs = Definitions(
+        assets=[
+            dbt_analytics,
+            dbt_seeds,
+        ],
+        resources={
+            "dbt":dbt_resource,
+        }
+    )
+
+    return Definitions.merge(dbt_defs, dlt_defs)

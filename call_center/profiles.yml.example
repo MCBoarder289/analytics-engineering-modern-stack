@@ -17,7 +17,7 @@ call_center:
 
     prod:
       type: duckdb
-      path: 'path/to/analytics-engineering-modern-stack/data/warehouse_prod.duckdb'
+      path: '/path/to/analytics-engineering-modern-stack/data/warehouse/warehouse_prod.duckdb'
       threads: 4
 
   target: dev
