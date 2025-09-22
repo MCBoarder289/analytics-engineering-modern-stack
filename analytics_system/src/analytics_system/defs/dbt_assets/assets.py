@@ -16,7 +16,7 @@ daily_partition = dg.DailyPartitionsDefinition(start_date=GLOBAL_START_DATE, end
     pool="duckdb_dbt",
 )
 def dbt_seeds(context: dg.AssetExecutionContext, dbt: DbtCliResource):
-    yield from dbt.cli(["build"], context=context).stream()
+    yield from dbt.cli(["build"], context=context).stream().fetch_row_counts().fetch_column_metadata()
 
 
 @dbt_assets(
@@ -26,7 +26,7 @@ def dbt_seeds(context: dg.AssetExecutionContext, dbt: DbtCliResource):
     pool="duckdb_dbt",
 )
 def dbt_analytics(context: dg.AssetExecutionContext, dbt: DbtCliResource):
-    # Need to have a build command ic case there's no partitions called (ex: running asset checks from asset def page)
+    # Need to have a build command in case there's no partitions called (ex: running asset checks from asset def page)
     if context.has_partition_key_range or context.has_partition_key:
 
         time_window = context.partition_time_window
@@ -38,4 +38,4 @@ def dbt_analytics(context: dg.AssetExecutionContext, dbt: DbtCliResource):
     else:
         cli_args = ["build"]
 
-    yield from dbt.cli(args=cli_args, context=context).stream()
+    yield from dbt.cli(args=cli_args, context=context).stream().fetch_row_counts().fetch_column_metadata()
