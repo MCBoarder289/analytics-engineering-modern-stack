@@ -5,6 +5,10 @@
   * Give example of a profiles.yml
   * ensure the databases are in the proper place
 
+* **dbt tests**
+  * tests can be defined in the tests directory, and they're automatically assigned to the models they reference
+  * can also define generic tests that can be re-used and placed in the models yaml files
+
 Here's how the .dbt folder and profiles.yml are created:
 * Manual Creation: The .dbt folder is typically created in the user's home directory (e.g., ~/.dbt on macOS/Linux or C:\Users\<YourUser>\.dbt on Windows).
 * profiles.yml Creation: Inside this .dbt folder, the user must manually create a profiles.yml file. This file contains the connection details for the data warehouse(s) dbt will interact with.
