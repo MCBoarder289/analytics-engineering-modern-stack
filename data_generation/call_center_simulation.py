@@ -317,7 +317,7 @@ def write_daily_parquet(records: list[dict], output_dir: str, table: str, date: 
     df.to_parquet(filename, index=False)
 
 
-def simulate_call_center(rng: np.random.Generator, output_dir="data"):
+def simulate_call_center(rng: np.random.Generator):
     call_id_counter, crm_id_counter, survey_id_counter = 0, 0, 0
     pending_callbacks = []
 
@@ -404,7 +404,11 @@ def simulate_call_center(rng: np.random.Generator, output_dir="data"):
 
                 if rng.random() < SURVEY_RATE:
                     survey_id_counter += 1
-                    response_ts = end_ts + datetime.timedelta(days=float(rng.integers(0, 4)))
+                    response_ts = (
+                        end_ts
+                        + datetime.timedelta(seconds=float(rng.integers(15, 60)))
+                        + datetime.timedelta(days=float(rng.integers(0, 4)))
+                    )
                     csat = int(np.clip(rng.normal(4 if not transfer and hold_time < 60 else 3, 1), 1, 5))
                     nps = int(
                         np.clip(
@@ -418,7 +422,7 @@ def simulate_call_center(rng: np.random.Generator, output_dir="data"):
                         "call_id": call_id,
                         "agent_id": agent_id,
                         "customer_id": customer["customer_id"].item(),
-                        "sent_ts": end_ts + datetime.timedelta(minutes=5),
+                        "sent_ts": end_ts + datetime.timedelta(seconds=5),
                         "response_ts": response_ts,
                         "csat": csat,
                         "nps": nps,
