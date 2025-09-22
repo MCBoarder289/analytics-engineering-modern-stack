@@ -1,7 +1,8 @@
 import os
+from datetime import datetime, timedelta
 
 import dlt
-from dagster import AssetExecutionContext, BackfillPolicy, DailyPartitionsDefinition
+from dagster import AssetExecutionContext, DailyPartitionsDefinition
 from dagster_dlt import DagsterDltResource, dlt_assets
 from dlt.sources.filesystem import filesystem, read_parquet
 
@@ -25,31 +26,46 @@ def parquet_day_partition(dataset: str, date_partition: str):
     return filesystem(partition_path, file_glob="*.parquet") | read_parquet()  # type: ignore
 
 
+def date_range_list(start_date: str, end_date: str) -> list[str]:
+    start = datetime.strptime(start_date, "%Y-%m-%d")
+    end = datetime.strptime(end_date, "%Y-%m-%d")
+    delta = (end - start).days
+    return [(start + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(delta + 1)]
+
 @dlt.source
-def filesystem_calls_source(date_partition: str | None = None):
+def filesystem_calls_source(date_partition: str | list[str] | None = None):
     @dlt.resource
     def calls():
-        if date_partition:
+        if isinstance(date_partition, str):
             yield from parquet_day_partition(dataset="calls", date_partition=date_partition)
+        elif isinstance(date_partition, list):
+            for date in date_partition:
+                yield from parquet_day_partition(dataset="calls", date_partition=date)
 
     return calls
 
 
 @dlt.source
-def filesystem_crm_source(date_partition: str | None = None):
+def filesystem_crm_source(date_partition: str | list[str] | None = None):
     @dlt.resource
     def crm():
-        if date_partition:
+        if isinstance(date_partition, str):
             yield from parquet_day_partition(dataset="crm", date_partition=date_partition)
+        elif isinstance(date_partition, list):
+            for date in date_partition:
+                yield from parquet_day_partition(dataset="crm", date_partition=date)
 
     return crm
 
 @dlt.source
-def filesystem_surveys_source(date_partition: str | None = None):
+def filesystem_surveys_source(date_partition: str | list[str] | None = None):
     @dlt.resource
     def surveys():
-        if date_partition:
+        if isinstance(date_partition, str):
             yield from parquet_day_partition(dataset="surveys", date_partition=date_partition)
+        elif isinstance(date_partition, list):
+            for date in date_partition:
+                yield from parquet_day_partition(dataset="surveys", date_partition=date)
 
     return surveys
 
@@ -64,13 +80,14 @@ def filesystem_surveys_source(date_partition: str | None = None):
         destination=dlt.destinations.duckdb(INGEST_CALLS_ABS_PATH),
     ),
     partitions_def=daily_partitions,
-    backfill_policy=BackfillPolicy.multi_run(),
     group_name="raw_ingestion",
-    pool="duckdb_ingest_calls",
 )
 def calls_ingestion(context: AssetExecutionContext, dlt: DagsterDltResource):
-    date = context.partition_key
-    yield from dlt.run(context=context, dlt_source=filesystem_calls_source(date_partition=date))
+    if context.partition_key_range.start == context.partition_key_range.end:
+        yield from dlt.run(context=context, dlt_source=filesystem_calls_source(date_partition=context.partition_key))
+    else:
+        date_list = date_range_list(context.partition_key_range.start, context.partition_key_range.end)
+        yield from dlt.run(context=context, dlt_source=filesystem_calls_source(date_partition=date_list))
 
 
 @dlt_assets(
@@ -83,13 +100,14 @@ def calls_ingestion(context: AssetExecutionContext, dlt: DagsterDltResource):
         destination=dlt.destinations.duckdb(INGEST_CRM_ABS_PATH)
     ),
     partitions_def=daily_partitions,
-    backfill_policy=BackfillPolicy.multi_run(),
     group_name="raw_ingestion",
-    pool="duckdb_ingest_crm",
 )
 def crm_ingestion(context: AssetExecutionContext, dlt: DagsterDltResource):
-    date = context.partition_key
-    yield from dlt.run(context=context, dlt_source=filesystem_crm_source(date_partition=date))
+    if context.partition_key_range.start == context.partition_key_range.end:
+        yield from dlt.run(context=context, dlt_source=filesystem_crm_source(date_partition=context.partition_key))
+    else:
+        date_list = date_range_list(context.partition_key_range.start, context.partition_key_range.end)
+        yield from dlt.run(context=context, dlt_source=filesystem_crm_source(date_partition=date_list))
 
 
 @dlt_assets(
@@ -102,13 +120,14 @@ def crm_ingestion(context: AssetExecutionContext, dlt: DagsterDltResource):
         destination=dlt.destinations.duckdb(INGEST_SURVEYS_ABS_PATH),
     ),
     partitions_def=daily_partitions,
-    backfill_policy=BackfillPolicy.multi_run(),
     group_name="raw_ingestion",
-    pool="duckdb_ingest_surveys",
 )
 def surveys_ingestion(context: AssetExecutionContext, dlt: DagsterDltResource):
-    date = context.partition_key
-    yield from dlt.run(context=context, dlt_source=filesystem_surveys_source(date_partition=date))
+    if context.partition_key_range.start == context.partition_key_range.end:
+        yield from dlt.run(context=context, dlt_source=filesystem_surveys_source(date_partition=context.partition_key))
+    else:
+        date_list = date_range_list(context.partition_key_range.start, context.partition_key_range.end)
+        yield from dlt.run(context=context, dlt_source=filesystem_surveys_source(date_partition=date_list))
 
 
 ## Discover Asset Keys
@@ -126,26 +145,6 @@ def surveys_ingestion(context: AssetExecutionContext, dlt: DagsterDltResource):
 #
 # for asset_key in surveys_ingestion.keys:
 #     print(f"ASSET KEY: {asset_key.path}")
-#
-# TODO: Configure concurrency so that it doesn't fail.
-# Concurrency notes: I was able to materialize all 89 partitions of a single asset pretty easily without any
-# concurrency limits. However, when I tried to backfill all 3 for all the same partitions, I ran into
-# a bunch of failures. Looking at the dagster run logs, if I filtered for the first failure, it was due to this error:
-# _duckdb.IOException: IO Error: Could not set lock on file ".../data_warehouse.duckdb": Conflicting lock is held in
-# .../Python (PID 22584) by user michaelchapman. See also https://duckdb.org/docs/stable/connect/concurrency
-# In the end, it was about ~30 something partitions that were completed per data source, so likely that's some limit
-# given my machine.
-#
-# I was able to re-run the failed paritions, and all but one failed, but that certainly caused dupes in the source data
-# It was nice to know that dagster pretty gracefully only ran jobs for failed partitions within each source, which in
-# theory should not have produced dupes from the source, but I bet some of the partition ranges overlapped or something?
-
-# Putting them on pools and making the pool limit value 1 made this complete successfully without the write errors.
-# Removing concurrency increased the pipeline time to bout 8.5 minutes for the entire dataset (not great).
-# This requires going into the UI because you can't set that in the dagster.yaml, except for a default for all
-
-
-
 
 # TODO: Figure out if any of this should be unit tested
 

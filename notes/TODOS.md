@@ -48,3 +48,33 @@ Here's how the .dbt folder and profiles.yml are created:
     * https://docs.dagster.io/integrations/libraries/dbt/dbt-pythonic 
     * https://docs.dagster.io/api/libraries/dagster-dbt#dbt-core
       * See "prepare_if_dev" to ensure changes to dbt get refreshed when running dg dev
+
+
+### Data Generation
+* Fully understand the gap of survey response times
+  * Right now, the "day" partition is the day we receive the surveys
+  * The staging partition re-runs everything minus a lookback window to cover this diff.
+* Need to figure out the `customers` dimension table
+* [DONE] Get dlt to run with a single-run backfill policy
+  * This was done by better understanding the context partition_key_range.
+  * The default backfill policy of a single run makes sense because then we don't have to worry about that coordination. We let dagster handle that under the hood.
+  * Because we're writing to separate duckdb databases in ingestion, we can parallelize the execution, which eliminates the need for the pool.
+  * Notes:
+    ```python
+    # TODO: Configure concurrency so that it doesn't fail.
+    # Concurrency notes: I was able to materialize all 89 partitions of a single asset pretty easily without any
+    # concurrency limits. However, when I tried to backfill all 3 for all the same partitions, I ran into
+    # a bunch of failures. Looking at the dagster run logs, if I filtered for the first failure, it was due to this error:
+    # _duckdb.IOException: IO Error: Could not set lock on file ".../data_warehouse.duckdb": Conflicting lock is held in
+    # .../Python (PID 22584) by user michaelchapman. See also https://duckdb.org/docs/stable/connect/concurrency
+    # In the end, it was about ~30 something partitions that were completed per data source, so likely that's some limit
+    # given my machine.
+    #
+    # I was able to re-run the failed paritions, and all but one failed, but that certainly caused dupes in the source data
+    # It was nice to know that dagster pretty gracefully only ran jobs for failed partitions within each source, which in
+    # theory should not have produced dupes from the source, but I bet some of the partition ranges overlapped or something?
+    
+    # Putting them on pools and making the pool limit value 1 made this complete successfully without the write errors.
+    # Removing concurrency increased the pipeline time to bout 8.5 minutes for the entire dataset (not great).
+    # This requires going into the UI because you can't set that in the dagster.yaml, except for a default for all
+    ``` 
