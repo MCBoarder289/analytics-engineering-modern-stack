@@ -2,46 +2,46 @@ version: 2
 
 models:
   - name: stg_calls
-    description: ""
+    description: "Contains all of the telephony call records and measurements for each call"
     columns:
       - name: call_id
         data_tests:
           - unique
           - not_null
         data_type: bigint
-        description: ""
+        description: "Unique identifier for the call in the telephony system"
 
       - name: agent_id
         data_type: bigint
-        description: ""
+        description: "Unique identifier for the agent who handled the call"
 
       - name: customer_id
         data_type: bigint
-        description: ""
+        description: "Unique identifier for the customer served on the call"
 
       - name: queue_hold_time
         data_type: bigint
-        description: ""
+        description: "Amount of time the caller was on hold before the call was picked up by the agent in seconds"
 
       - name: start_ts
         data_type: timestamp with time zone
-        description: ""
+        description: "Timestamp of when the call started"
 
       - name: end_ts
         data_type: timestamp with time zone
-        description: ""
+        description: "Timestamp of when the call ended"
 
       - name: duration_s
         data_type: bigint
-        description: ""
+        description: "Duration of the entire call in seconds"
 
       - name: hold_time_during_call_s
         data_type: bigint
-        description: ""
+        description: "Amount of time the caller was on hold during the call in seconds"
 
       - name: transfer_flag
         data_type: boolean
-        description: ""
+        description: "Indicator that the call was escalated to a manager"
 
   - name: stg_crm
     description: ""
@@ -51,35 +51,35 @@ models:
           - unique
           - not_null
         data_type: bigint
-        description: ""
+        description: "Unique identifier for the crm record in the crm system"
 
       - name: agent_id
         data_type: bigint
-        description: ""
+        description: "Unique identifier for the agent who handled the call"
 
       - name: call_id
         data_type: bigint
-        description: ""
+        description: "Unique identifier for the call in the telephony system"
 
       - name: customer_id
         data_type: bigint
-        description: ""
+        description: "Unique identifier for the customer served"
 
       - name: reason_code
         data_type: varchar
-        description: ""
+        description: "High level reason selected by agent representing why the customer called"
 
       - name: sub_reason_code
         data_type: varchar
-        description: ""
+        description: "More detailed reason selected by agent on the specific reason for the call"
 
       - name: previous_issue_flag
         data_type: boolean
-        description: ""
+        description: "Agent input as to whether this call was about a previous issue"
 
       - name: created_ts
         data_type: timestamp with time zone
-        description: ""
+        description: "Timestamp when this crm record was created in the crm system"
 
   - name: stg_surveys
     description: ""
@@ -89,32 +89,43 @@ models:
           - unique
           - not_null
         data_type: bigint
-        description: ""
+        description: "Unique identifier for the survey in the survey system"
 
       - name: call_id
         data_type: bigint
-        description: ""
+        description: "Unique identifier for the call in the telephony system"
 
       - name: agent_id
         data_type: bigint
-        description: ""
+        description: "Unique identifier for the agent who handled the call"
 
       - name: customer_id
         data_type: bigint
-        description: ""
+        description: "Unique identifier for the customer served"
 
       - name: sent_ts
         data_type: timestamp with time zone
-        description: ""
+        description: "Timestamp when the survey was sent"
 
       - name: response_ts
         data_type: timestamp with time zone
-        description: ""
+        description: "Timestamp when the survey was received"
 
       - name: csat
         data_type: bigint
-        description: ""
+        description: "Response to the customer satisfaction question (1 - 5 stars)"
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5]
+                quote: false
+
 
       - name: nps
         data_type: bigint
-        description: ""
+        description: "Response to the NPS question (On a scale of 1 - 10, how likely are you to recommend this service to a friend?)"
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+                quote: false

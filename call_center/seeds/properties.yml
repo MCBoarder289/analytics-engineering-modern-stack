@@ -1,12 +1,77 @@
 seeds:
   - name: agent_assignments
+    description: Tracks the temporal assigments of agents to managers
     config:
       group: seed_data
+    columns:
+      - name: agent_id
+        data_type: bigint
+        data_tests:
+          - relationships:
+                arguments:
+                  to: ref('agents')
+                  field: agent_id
+      - name: manager_id
+        data_type: bigint
+        data_tests:
+          - relationships:
+                arguments:
+                  to: ref('managers')
+                  field: manager_id
+      - name: effective_start
+        data_type: timestamp with time zone
+      - name: effective_end
+        data_type: timestamp with time zone
 
   - name: agents
+    description: Mapping of agent ids to their names
     config:
       group: seed_data
+    columns:
+      - name: agent_id
+        data_type: bigint
+        data_tests:
+          - unique
+          - not_null
+      - name: agent_name
+        data_type: varchar
 
   - name: managers
+    description: Mapping of manager ids to their names
     config:
       group: seed_data
+    columns:
+      - name: manager_id
+        data_type: bigint
+        data_tests:
+          - unique
+          - not_null
+      - name: manager_name
+        data_type: varchar
+      
+  - name: customers
+    description: Basic information about each customer
+    config:
+      group: seed_data
+      column_types:
+        zip_code: varchar # forcing to extract this as a string from the csv
+
+    columns:
+      - name: customer_id
+        data_type: bigint
+        data_tests:
+          - unique
+          - not_null
+      - name: first_name
+        data_type: varchar
+      - name: last_name
+        data_type: varchar
+      - name: birth_date
+        data_type: date
+      - name: state
+        data_type: varchar
+      - name: zip_code
+        data_type: varchar
+      - name: program
+        data_type: varchar
+      

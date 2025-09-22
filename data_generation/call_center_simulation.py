@@ -142,7 +142,7 @@ def generate_customers(
     customer_records = []
 
     for i in range(num_customers):
-        state = fake.state_abbr(include_territories=False)
+        state = fake.state_abbr(include_territories=False, include_freely_associated_states=False)
         program_selection = random.choice(program_names)
         customer_record = {
             'customer_id': i + 1,
@@ -156,8 +156,10 @@ def generate_customers(
 
         customer_records.append(customer_record)
 
+    customer_df = pd.DataFrame.from_records(customer_records)
+    customer_df["zip_code"] = customer_df["zip_code"].astype(str)
 
-    return pd.DataFrame.from_records(customer_records)
+    return customer_df
 
 # test = generate_customers(num_customers=1500)
 # test2 = generate_customers(num_customers=1500)
@@ -270,6 +272,7 @@ customers = generate_customers(num_customers=1500)
 agents.to_csv("../call_center/seeds/agents.csv", index=False, header=True)
 managers.to_csv("../call_center/seeds/managers.csv", index=False, header=True)
 agent_assignments.to_csv("../call_center/seeds/agent_assignments.csv", index=False, header=True)
+customers.to_csv("../call_center/seeds/customers.csv", index=False, header=True)
 
 
 ### FULL SIMULATION

@@ -8,6 +8,12 @@
 * **dbt tests**
   * tests can be defined in the tests directory, and they're automatically assigned to the models they reference
   * can also define generic tests that can be re-used and placed in the models yaml files
+  * **seed tests**
+    * note that if we don't run all of our seeds together, we can't test referential integrity
+    * I have a referential integrity test between agent_assignments and the agents and managers tables, which will fail if those aren't present.
+      * Note that it will still write the table, just fail the asset checks until the other pieces are materialized
+      * This is an interesting instructional point that the DAG should show sequence
+        * We could model an ephemeral cte that would simply be to test this asset, but that seems to be onerous?
 
 Here's how the .dbt folder and profiles.yml are created:
 * Manual Creation: The .dbt folder is typically created in the user's home directory (e.g., ~/.dbt on macOS/Linux or C:\Users\<YourUser>\.dbt on Windows).
