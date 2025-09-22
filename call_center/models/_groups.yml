@@ -1,3 +1,5 @@
+version: 2
+
 groups:
   - name: seed_data
     owner: 

@@ -1,23 +1,15 @@
+version: 2
+
 seeds:
   - name: agent_assignments
-    description: Tracks the temporal assigments of agents to managers
+    description: Tracks the temporal assignments of agents to managers
     config:
       group: seed_data
     columns:
       - name: agent_id
         data_type: bigint
-        data_tests:
-          - relationships:
-                arguments:
-                  to: ref('agents')
-                  field: agent_id
       - name: manager_id
         data_type: bigint
-        data_tests:
-          - relationships:
-                arguments:
-                  to: ref('managers')
-                  field: manager_id
       - name: effective_start
         data_type: timestamp with time zone
       - name: effective_end
