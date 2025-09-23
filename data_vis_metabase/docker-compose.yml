@@ -1,0 +1,33 @@
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: metabase_postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: metabaseappdb
+      POSTGRES_USER: metabase
+      POSTGRES_PASSWORD: metabasepass
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+
+  metabase:
+    build: .
+    container_name: metaduck
+    restart: always
+    ports:
+      - "80:3000"
+    environment:
+      MB_DB_TYPE: postgres
+      MB_DB_DBNAME: metabaseappdb
+      MB_DB_PORT: 5432
+      MB_DB_USER: metabase
+      MB_DB_PASS: metabasepass
+      MB_DB_HOST: postgres
+      MB_PLUGINS_DIR: /home/plugins
+    depends_on:
+      - postgres
+    volumes:
+      - ../data/warehouse/warehouse_dev.duckdb:/warehouse/warehouse_dev.duckdb
