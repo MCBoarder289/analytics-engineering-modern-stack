@@ -276,13 +276,14 @@ customers.to_csv("../call_center/seeds/customers.csv", index=False, header=True)
 
 
 ### FULL SIMULATION
-CALLS_PER_AGENT_PER_DAY = 60
+CALLS_PER_AGENT_PER_DAY = 60  # Likely not enough
 CALLBACK_RATE = 0.1
 SURVEY_RATE = 0.3
 PREVIOUS_ISSUE_RATE = 0.4
 TRANSFER_RATE = 0.1
 WORKDAY_START = 8
 WORKDAY_END = 17
+MEAN_SECONDS_BETWEEN_CALLS = 600
 
 # Seasonality + weekday scaling
 SEASONALITY_AMPLITUDE = 0.3  # +/- 30%
@@ -364,8 +365,9 @@ def simulate_call_center(rng: np.random.Generator):
                     previous_issue_flag = False
 
                 hold_time = simulate_hold_time(rng)
-                start_ts = start_time + datetime.timedelta(seconds=hold_time)
-                end_ts = start_ts + datetime.timedelta(seconds=duration)
+                inter_arrival = rng.exponential(scale=MEAN_SECONDS_BETWEEN_CALLS)
+                start_time = start_time + datetime.timedelta(seconds=hold_time + inter_arrival)
+                end_ts = start_time + datetime.timedelta(seconds=duration)
 
                 # Stop work items if there isn't enough time in workday
                 if end_ts.hour >= WORKDAY_END:
@@ -381,7 +383,7 @@ def simulate_call_center(rng: np.random.Generator):
                     "agent_id": agent_id,
                     "customer_id": customer["customer_id"].item(),
                     "queue_hold_time": hold_time,
-                    "start_ts": start_ts,
+                    "start_ts": start_time,
                     "end_ts": end_ts,
                     "duration_s": duration,
                     "hold_time_during_call_s": rng.integers(0,60),
@@ -400,7 +402,7 @@ def simulate_call_center(rng: np.random.Generator):
                     "reason_code": reason,
                     "sub_reason_code": subreason,
                     "previous_issue_flag": previous_issue_flag,
-                    "created_ts": start_ts,
+                    "created_ts": start_time,
                 }
 
                 day_crm.append(crm)
@@ -445,6 +447,9 @@ def simulate_call_center(rng: np.random.Generator):
                             "subreason": subreason,
                             "agent_id": cb_agent["agent_id"].item(),
                         })
+                # need to kick off the next call as another time after the duration of the call
+                # so the inter-arrival time will get added next time start_time is reassigned
+                start_time = end_ts
 
         # write daily calls/crm
         write_daily_parquet(records=day_calls, output_dir="../data", table="calls", date=day_date)
