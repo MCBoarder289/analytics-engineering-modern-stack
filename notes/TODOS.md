@@ -1,5 +1,12 @@
 # TODOS
 
+## Warehousing / Modeling
+* Build `fct_` tables, supplementing the `stg_` tables with denormalized data from other joined tables
+  * ex: join in customer data metadata, 
+* Build `'mart_` tables for operational analytics
+  * ex: hierarchical summaries for managers, agents
+  * ex: summarized/aggregated tables daily
+
 ## dbt stuff
 * need to add instructions on setting up their local profiles.yml
   * Give example of a profiles.yml
@@ -64,7 +71,9 @@ Here's how the .dbt folder and profiles.yml are created:
 * Fully understand the gap of survey response times
   * Right now, the "day" partition is the day we receive the surveys
   * The staging partition re-runs everything minus a lookback window to cover this diff.
-* Need to figure out the `customers` dimension table
+* [DONE] Make sure Data Generation is deterministic
+  * [DONE] Test that parquet outputs contain same records across all runs.
+* [DONE] Need to figure out the `customers` dimension table
 * [DONE] Get dlt to run with a single-run backfill policy
   * This was done by better understanding the context partition_key_range.
   * The default backfill policy of a single run makes sense because then we don't have to worry about that coordination. We let dagster handle that under the hood.

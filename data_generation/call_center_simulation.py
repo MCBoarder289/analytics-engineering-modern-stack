@@ -1,102 +1,121 @@
 import datetime
 import os
 import random
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from faker import Faker
 
-MIN_CALL_LENGTH = 20  # seconds
+from data_generation.constants import GLOBAL_END_DATE, GLOBAL_START_DATE, PROGRAMS, WEEKDAY_MULTIPLIERS
 
-### Establish Programs/Call Type
 
-# programs represents different internal business groupings
-# these will influence call volumes/lengths/call reasons
+@dataclass(frozen=True)
+class SimulationConfig:
+    global_start_date: datetime.date = GLOBAL_START_DATE
+    global_end_date: datetime.date = GLOBAL_END_DATE
+    programs: dict = field(default_factory=lambda: PROGRAMS.copy())
+    customers_count: int = 1500
+    agents_count: int = 50
+    managers_count: int = 5
+    # Simulation parameters
+    min_call_length: int = 20
+    calls_per_agent_per_day: int = 60
+    callback_rate: float = 0.1
+    survey_rate: float = 0.3
+    previous_issue_rate: float = 0.4
+    transfer_rate: float = 0.1
+    workday_start: int = 8
+    workday_end: int = 17
+    mean_seconds_between_calls: int = 600
+    # Seasonality + weekday scaling
+    seasonality_amplitude: float = 0.3  # +/- 30%
+    weekday_multipliers: dict = field(default_factory=lambda:WEEKDAY_MULTIPLIERS.copy())
+    # Reproducibility
+    rng_seed: int = 289
+    output_dir: str = "../data"
+    write_csv: bool = True
+    write_parquet: bool = True
+    tables: list[str] = ("calls", "crm", "surveys", "agents", "managers", "agent_assignments")
 
-programs = {
-    "Technical Support": {
-        "reasons": [
-            {
-                "name": "Device Issue",
-                "prob": 0.5,
-                "sub_reasons": [
-                    {"name": "Phone", "prob": 0.55, "duration_mean": 300, "duration_std": 60},
-                    {"name": "Laptop", "prob": 0.10, "duration_mean": 600, "duration_std": 90},
-                    {"name": "TV", "prob": 0.35, "duration_mean": 700, "duration_std": 120},
-                ]
-            },
-            {
-                "name": "Login Issue",
-                "prob": 0.4,
-                "sub_reasons": [
-                    {"name": "Forgot Password", "prob": 0.8, "duration_mean": 180, "duration_std": 40},
-                    {"name": "Account Expired", "prob": 0.2, "duration_mean": 250, "duration_std": 60},
-                ]
-            },
-            {
-                "name": "Other Issue",
-                "prob": 0.1,
-                "sub_reasons": [
-                    {"name": "Billing Questions", "prob": 0.75, "duration_mean": 200, "duration_std": 45},
-                    {"name": "General Inquiry", "prob": 0.25, "duration_mean": 120, "duration_std": 20 },
-                ]
+    def generate_customers(self, faker_seed: int = 289, random_seed: int = 315) -> pd.DataFrame:
+        fake = Faker()
+        Faker.seed(faker_seed)
+        random.seed(random_seed)
+
+        program_names = list(self.programs.keys())
+
+        customer_records = []
+
+        for i in range(self.customers_count):
+            state = fake.state_abbr(include_territories=False, include_freely_associated_states=False)
+            program_selection = random.choice(program_names)
+            customer_record = {
+                "customer_id": i + 1,
+                "first_name": fake.first_name(),
+                "last_name": fake.last_name(),
+                "birth_date": fake.date_between(
+                    start_date=self.global_start_date - datetime.timedelta(days=77 * 365),
+                    end_date=self.global_start_date - datetime.timedelta(days=21 * 365),
+                ),
+                "state": state,
+                "zip_code": fake.zipcode_in_state(state_abbr=state),
+                "program": program_selection,
             }
-        ]
-    },
-    "Claim Administration": {
-        "reasons": [
-            {
-                "name": "New Claim",
-                "prob": 0.4,
-                "sub_reasons": [
-                    {"name": "Medical", "prob": 0.5, "duration_mean": 900, "duration_std": 60},
-                    {"name": "Auto", "prob": 0.3, "duration_mean": 720, "duration_std": 35},
-                    {"name": "Other", "prob": 0.2, "duration_mean": 600, "duration_std": 120},
-                ]
-            },
-            {
-                "name": "Claim Status",
-                "prob": 0.6,
-                "sub_reasons": [
-                    {"name": "Pending", "prob": 0.5, "duration_mean": 480, "duration_std": 120},
-                    {"name": "Approved", "prob": 0.3, "duration_mean": 360, "duration_std": 120},
-                    {"name": "Denied", "prob": 0.2, "duration_mean": 720, "duration_std": 240},
-                ]
-            }
-        ]
-    },
-    "Financial Planning": {
-        "reasons": [
-            {
-                "name": "Budget Help",
-                "prob": 0.5,
-                "sub_reasons": [
-                    {"name": "Monthly Plan", "prob": 0.7, "duration_mean": 900, "duration_std": 200},
-                    {"name": "Annual Plan", "prob": 0.3, "duration_mean": 1200, "duration_std": 300},
-                ]
-            },
-            {
-                "name": "Investment Advice",
-                "prob": 0.5,
-                "sub_reasons": [
-                    {"name": "Retirement", "prob": 0.5, "duration_mean": 1800, "duration_std": 600},
-                    {"name": "Stocks", "prob": 0.5, "duration_mean": 1500, "duration_std": 720},
-                ]
-            }
-        ]
-    }
-}
 
-GLOBAL_START_DATE = datetime.date(2025, 1, 1)
-GLOBAL_END_DATE = datetime.date(2025, 3, 31)
+            customer_records.append(customer_record)
+
+        customer_df = pd.DataFrame.from_records(customer_records)
+        customer_df["zip_code"] = customer_df["zip_code"].astype(str)
+
+        return customer_df
+
+    def generate_agents(self, faker_seed: int = 867) -> pd.DataFrame:
+        fake = Faker()
+        Faker.seed(faker_seed)
+
+        agent_records = []
+
+        for i in range(self.agents_count):
+            agent_record = {
+                "agent_id": i + 1,
+                "agent_name": fake.name(),
+            }
+            agent_records.append(agent_record)
+
+        return pd.DataFrame.from_records(agent_records)
+
+    def generate_managers(self, faker_seed: int = 222) -> pd.DataFrame:
+        fake = Faker()
+        Faker.seed(faker_seed)
+
+        manager_records = []
+
+        for i in range(self.managers_count):
+            manager_record = {
+                "manager_id": i + 1,
+                "manager_name": fake.name(),
+            }
+            manager_records.append(manager_record)
+
+        return pd.DataFrame.from_records(manager_records)
+
+DEFAULT_CONFIG = SimulationConfig()
+
 
 ### Helper function to simulate call reasons
-def get_call_reasons_plus_duration(program_key: str, reason: str | None = None, subreason: str | None = None):
+def get_call_reasons_plus_duration(
+    simulation_config: SimulationConfig,
+    program_key: str,
+    rng: np.random.Generator,
+    reason: str | None = None,
+    subreason: str | None = None,
+):
     if reason and subreason:
         reason_record = [
             reason_record
-            for reason_record in programs[program_key]["reasons"]
+            for reason_record in simulation_config.programs[program_key]["reasons"]
             if reason_record["name"] == reason
         ][0]
         subreason_record = [
@@ -106,97 +125,27 @@ def get_call_reasons_plus_duration(program_key: str, reason: str | None = None, 
         ][0]
 
         duration = max(
-            MIN_CALL_LENGTH, int(np.random.normal(subreason_record["duration_mean"], subreason_record["duration_std"]))
+            simulation_config.min_call_length,
+            int(rng.normal(subreason_record["duration_mean"], subreason_record["duration_std"])),
         )
 
         return reason, subreason, duration
     else:
-        reasons = programs[program_key]["reasons"]
+        reasons = simulation_config.programs[program_key]["reasons"]
         reason_probs = [r["prob"] for r in reasons]
 
-        reason = np.random.choice(reasons, p=reason_probs)
+        reason =rng.choice(reasons, p=reason_probs)
         sub_reasons = reason["sub_reasons"]
         sub_probs = [s["prob"] for s in sub_reasons]
 
-        sub_reason = np.random.choice(sub_reasons, p=sub_probs)
+        sub_reason = rng.choice(sub_reasons, p=sub_probs)
 
         # duration draw ~ Normal(mean, std)
-        duration = max(MIN_CALL_LENGTH, int(np.random.normal(sub_reason["duration_mean"], sub_reason["duration_std"])))
+        duration = max(
+            simulation_config.min_call_length, int(rng.normal(sub_reason["duration_mean"], sub_reason["duration_std"]))
+        )
 
         return reason["name"], sub_reason["name"], duration
-
-
-### Generate Customer Records
-
-# Customer will get a single program
-def generate_customers(
-    num_customers: int,
-) -> pd.DataFrame:
-
-    fake = Faker()
-    Faker.seed(289)
-    random.seed(315)
-
-    program_names = list(programs.keys())
-
-    customer_records = []
-
-    for i in range(num_customers):
-        state = fake.state_abbr(include_territories=False, include_freely_associated_states=False)
-        program_selection = random.choice(program_names)
-        customer_record = {
-            'customer_id': i + 1,
-            'first_name': fake.first_name(),
-            'last_name': fake.last_name(),
-            'birth_date': fake.date_between(start_date="-77y", end_date="-21y"),
-            'state': state,
-            'zip_code': fake.zipcode_in_state(state_abbr=state),
-            'program': program_selection
-        }
-
-        customer_records.append(customer_record)
-
-    customer_df = pd.DataFrame.from_records(customer_records)
-    customer_df["zip_code"] = customer_df["zip_code"].astype(str)
-
-    return customer_df
-
-# test = generate_customers(num_customers=1500)
-# test2 = generate_customers(num_customers=1500)
-#
-# equals = test.equals(test2)
-
-### Generate Agent Records
-
-def generate_agents(num_agents:int) -> pd.DataFrame:
-    fake = Faker()
-    Faker.seed(867)
-
-    agent_records = []
-
-    for i in range(num_agents):
-        agent_record = {
-            'agent_id': i + 1,
-            'agent_name': fake.name(),
-        }
-        agent_records.append(agent_record)
-
-    return pd.DataFrame.from_records(agent_records)
-
-def generate_managers(num_managers: int) -> pd.DataFrame:
-    fake = Faker()
-    Faker.seed(222)
-
-    manager_records = []
-
-    for i in range(num_managers):
-        manager_record = {
-            'manager_id': i + 1,
-            'manager_name': fake.name(),
-        }
-        manager_records.append(manager_record)
-
-    return pd.DataFrame.from_records(manager_records)
 
 
 def distribute_agents_to_managers(
@@ -258,44 +207,6 @@ def distribute_agents_to_managers(
 
     return assignments_df
 
-agents = generate_agents(num_agents=50)
-managers = generate_managers(num_managers=5)
-agent_assignments = distribute_agents_to_managers(
-    agents=agents,
-    managers=managers,
-    start_date=GLOBAL_START_DATE,
-    end_date=GLOBAL_END_DATE,
-)
-customers = generate_customers(num_customers=1500)
-
-## Write out customers, managers, and assignments csv files for dbt seed
-agents.to_csv("../call_center/seeds/agents.csv", index=False, header=True)
-managers.to_csv("../call_center/seeds/managers.csv", index=False, header=True)
-agent_assignments.to_csv("../call_center/seeds/agent_assignments.csv", index=False, header=True)
-customers.to_csv("../call_center/seeds/customers.csv", index=False, header=True)
-
-
-### FULL SIMULATION
-CALLS_PER_AGENT_PER_DAY = 60  # Likely not enough
-CALLBACK_RATE = 0.1
-SURVEY_RATE = 0.3
-PREVIOUS_ISSUE_RATE = 0.4
-TRANSFER_RATE = 0.1
-WORKDAY_START = 8
-WORKDAY_END = 17
-MEAN_SECONDS_BETWEEN_CALLS = 600
-
-# Seasonality + weekday scaling
-SEASONALITY_AMPLITUDE = 0.3  # +/- 30%
-WEEKDAY_MULTIPLIERS = {
-    0: 1.2,  # Monday
-    1: 1.1,
-    2: 1.0,
-    3: 1.0,
-    4: 1.1,
-    5: 0.8,  # Saturday
-    6: 0.7,  # Sunday
-}
 
 def simulate_hold_time(rng: np.random.Generator) -> int:
     return int(np.clip(rng.normal(45, 20), 0, 300))
@@ -321,18 +232,41 @@ def write_daily_parquet(records: list[dict], output_dir: str, table: str, date: 
     df.to_parquet(filename, index=False)
 
 
-def simulate_call_center(rng: np.random.Generator):
+def simulate_call_center(
+    simulation_config: SimulationConfig = DEFAULT_CONFIG,
+    parquet_output_dir: str = "../data",
+    seed_output_dir: str = "../call_center/seeds",
+) -> None:
+    rng = np.random.default_rng(simulation_config.rng_seed)
+
+    ## Write out customers, managers, and assignments csv files for dbt seed
+    agents = simulation_config.generate_agents()
+    managers = simulation_config.generate_managers()
+    customers = simulation_config.generate_customers()
+    agent_assignments = distribute_agents_to_managers(
+        agents=agents,
+        managers=managers,
+        start_date=simulation_config.global_start_date,
+        end_date=simulation_config.global_end_date,
+    )
+    agents.to_csv(f"{seed_output_dir}/agents.csv", index=False, header=True)
+    managers.to_csv(f"{seed_output_dir}/managers.csv", index=False, header=True)
+    customers.to_csv(f"{seed_output_dir}/customers.csv", index=False, header=True)
+    agent_assignments.to_csv(f"{seed_output_dir}/agent_assignments.csv", index=False, header=True)
+
     call_id_counter, crm_id_counter, survey_id_counter = 0, 0, 0
     pending_callbacks = []
 
-    for day in pd.date_range(GLOBAL_START_DATE, GLOBAL_END_DATE):
+    for day in pd.date_range(simulation_config.global_start_date, simulation_config.global_end_date):
         print(f"Simulation start for day: {day}")
         print(f"calls: {call_id_counter}")
         print(f"crm: {crm_id_counter}")
         print(f"survey: {survey_id_counter}")
         day_date = day.date()
-        weekday_mult = WEEKDAY_MULTIPLIERS[day_date.weekday()]
-        seasonal_mult = 1 + SEASONALITY_AMPLITUDE * np.sin(2 * np.pi * (day_date - GLOBAL_START_DATE).days / 30)
+        weekday_mult = simulation_config.weekday_multipliers[day_date.weekday()]
+        seasonal_mult = 1 + simulation_config.seasonality_amplitude * np.sin(
+            2 * np.pi * (day_date - simulation_config.global_start_date).days / 30
+        )
         volume_mult = weekday_mult * seasonal_mult
 
         day_calls, day_crm = [], []
@@ -341,10 +275,9 @@ def simulate_call_center(rng: np.random.Generator):
         todays_callbacks = [cb for cb in pending_callbacks if cb["day"] == day_date]
 
         for _, agent_id in agents["agent_id"].items():
-            print(f"Agent ID: {agent_id}")
-            n_calls = int(CALLS_PER_AGENT_PER_DAY * volume_mult)
+            n_calls = int(simulation_config.calls_per_agent_per_day * volume_mult)
             start_time = datetime.datetime.combine(day_date, datetime.datetime.min.time()) + datetime.timedelta(
-                hours=WORKDAY_START
+                hours=simulation_config.workday_start
             )
 
             agent_callbacks = [cb for cb in todays_callbacks if cb["agent_id"] == agent_id]
@@ -355,25 +288,28 @@ def simulate_call_center(rng: np.random.Generator):
                 if item != "new" and isinstance(item, dict):  # callback
                     customer = customers[customers["customer_id"] == item["customer_id"]]
                     reason, subreason = item["reason"], item["subreason"]
-                    previous_issue_flag = rng.random() < PREVIOUS_ISSUE_RATE
-                    reason, subreason, duration = get_call_reasons_plus_duration(
-                        program_key=customer["program"].item(), reason=reason, subreason=subreason
+                    previous_issue_flag = rng.random() < simulation_config.previous_issue_rate
+                    reason, subreason, duration = get_call_reasons_plus_duration(simulation_config=simulation_config,
+                        program_key=customer["program"].item(), rng=rng, reason=reason, subreason=subreason
                     )
                 else:
-                    customer = customers.sample(1, random_state=rng)
-                    reason, subreason, duration = get_call_reasons_plus_duration(program_key=customer["program"].item())
+                    customer_idx = rng.integers(0, len(customers))
+                    customer = customers.iloc[[customer_idx]]
+                    reason, subreason, duration = get_call_reasons_plus_duration( simulation_config=simulation_config,
+                        program_key=customer["program"].item(), rng=rng
+                    )
                     previous_issue_flag = False
 
                 hold_time = simulate_hold_time(rng)
-                inter_arrival = rng.exponential(scale=MEAN_SECONDS_BETWEEN_CALLS)
+                inter_arrival = rng.exponential(scale=simulation_config.mean_seconds_between_calls)
                 start_time = start_time + datetime.timedelta(seconds=hold_time + inter_arrival)
                 end_ts = start_time + datetime.timedelta(seconds=duration)
 
                 # Stop work items if there isn't enough time in workday
-                if end_ts.hour >= WORKDAY_END:
+                if end_ts.hour >= simulation_config.workday_end:
                     break
 
-                transfer = rng.random() < TRANSFER_RATE
+                transfer = rng.random() < simulation_config.transfer_rate
 
                 # Telephony record
                 call_id_counter += 1
@@ -386,7 +322,7 @@ def simulate_call_center(rng: np.random.Generator):
                     "start_ts": start_time,
                     "end_ts": end_ts,
                     "duration_s": duration,
-                    "hold_time_during_call_s": rng.integers(0,60),
+                    "hold_time_during_call_s": rng.integers(0,60, endpoint=True),
                     "transfer_flag": transfer,
                 }
 
@@ -407,14 +343,19 @@ def simulate_call_center(rng: np.random.Generator):
 
                 day_crm.append(crm)
 
-                if rng.random() < SURVEY_RATE:
+                if rng.random() < simulation_config.survey_rate:
                     survey_id_counter += 1
                     response_ts = (
                         end_ts
-                        + datetime.timedelta(seconds=float(rng.integers(15, 60)))
-                        + datetime.timedelta(days=float(rng.integers(0, 4)))
+                        + datetime.timedelta(seconds=float(rng.integers(15, 60, endpoint=True)))
+                        + datetime.timedelta(days=float(rng.integers(0, 4, endpoint=True)))
                     )
-                    csat = int(np.clip(rng.normal(4 if not transfer and hold_time < 60 else 3, 1), 1, 5))
+                    csat = int(
+                        np.clip(
+                            rng.normal(4 if not transfer and hold_time < 60 else 3, 1),
+                            a_min=1,
+                            a_max=5)
+                    )
                     nps = int(
                         np.clip(
                             rng.normal(7 if not transfer and hold_time < 60 and not previous_issue_flag else 5, 1.5),
@@ -435,11 +376,12 @@ def simulate_call_center(rng: np.random.Generator):
 
                     day_surveys_by_date.setdefault(response_ts.date(), []).append(survey)
 
-                if item == "new" and rng.random() < CALLBACK_RATE:
-                    days_out = int(rng.integers(1, 6))
+                if item == "new" and rng.random() < simulation_config.callback_rate:
+                    days_out = int(rng.integers(1, 6, endpoint=True))
                     future_day = day_date + datetime.timedelta(days=days_out)
-                    if future_day < GLOBAL_END_DATE:
-                        cb_agent = agents[agents["agent_id"] != agent_id].sample(1)
+                    if future_day <= simulation_config.global_end_date:
+                        other_agents = agents[agents["agent_id"] != agent_id]
+                        cb_agent = other_agents.iloc[[rng.integers(0, len(other_agents))]]
                         pending_callbacks.append({
                             "day": future_day,
                             "customer_id": customer["customer_id"].item(),
@@ -452,16 +394,17 @@ def simulate_call_center(rng: np.random.Generator):
                 start_time = end_ts
 
         # write daily calls/crm
-        write_daily_parquet(records=day_calls, output_dir="../data", table="calls", date=day_date)
-        write_daily_parquet(records=day_crm, output_dir="../data", table="crm", date=day_date)
+        write_daily_parquet(records=day_calls, output_dir=parquet_output_dir, table="calls", date=day_date)
+        write_daily_parquet(records=day_crm, output_dir=parquet_output_dir, table="crm", date=day_date)
 
         # write daily survey data based on response date
         # should get multiple files in directory because of the randomness of responses by day of call
         for survey_date, surveys in day_surveys_by_date.items():
-            write_daily_parquet(records=surveys, output_dir="../data", table="surveys", date=survey_date)
+            write_daily_parquet(records=surveys, output_dir=parquet_output_dir, table="surveys", date=survey_date)
 
 
-simulate_call_center(rng=np.random.default_rng(289))
+if __name__ == "__main__":
+    simulate_call_center()
 
 
 # OUTDATED: Going to model this so that dbt snapshots the value for the manager column
