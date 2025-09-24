@@ -1,9 +1,12 @@
 
 import argparse
+import datetime
 import shutil
 from pathlib import Path
 
 import duckdb
+
+from data_generation.call_center_simulation import main as run_simulation
 
 BASE_DIR = Path(__file__).parent.resolve()
 DAGSTER_HOME = BASE_DIR / "analytics_system" / ".dagster_home"
@@ -21,6 +24,8 @@ PROFILES_YAML_FILE = BASE_DIR / "call_center" / "profiles.yml"
 
 DEV_WAREHOUSE_PATH = WAREHOUSE_DIR / "warehouse_dev.duckdb"
 PROD_WAREHOUSE_PATH = WAREHOUSE_DIR / "warehouse_prod.duckdb"
+
+DATA_DIR = BASE_DIR / "data"
 
 def init_env():
     if not ENV_EXAMPLE.exists():
@@ -101,7 +106,16 @@ def _confirm_and_delete(path: Path, preserve=None):
             shutil.rmtree(item)
         else:
             item.unlink()
+
+    for item in preserve:
+        print(f"PRESERVED: {path / item}")
+
     print(f"COMPLETED: Cleaned {path}")
+
+def _resolve_path(p: str | Path) -> Path:
+    """Resolve relative paths to be repo-root relative (next to manage.py)."""
+    p = Path(p)
+    return p if p.is_absolute() else BASE_DIR / p
 
 
 def reset_dagster():
@@ -118,12 +132,33 @@ def reset_warehouse():
     """Reset DuckDB warehouse state."""
     _confirm_and_delete(WAREHOUSE_DIR)
 
+def reset_source_data():
+    """Reset source data."""
+    _confirm_and_delete(DATA_DIR, preserve=["warehouse"])
+
+def generate_source_data(args):
+    """
+    Run the call center simulation.
+    Optionally pass overrides as a dict {param: value}.
+    """
+    overrides = {
+        "seed_output_dir": _resolve_path("./call_center/seeds"),
+        "parquet_output_dir": _resolve_path("./data"),
+    }
+    if args.global_start_date:
+        overrides["global_start_date"] = datetime.datetime.strptime(args.global_start_date, "%Y-%m-%d").date()
+
+    if args.global_end_date:
+        overrides["global_end_date"] = datetime.datetime.strptime(args.global_end_date, "%Y-%m-%d").date()
+
+    run_simulation(**overrides)
 
 def reset_all():
-    """Reset everything: dagster, dlt, and warehouse."""
+    """Reset everything: dagster, dlt, warehouse, and source data."""
     reset_dagster()
     reset_dlt()
     reset_warehouse()
+    reset_source_data()
 
 
 def main():
@@ -135,7 +170,12 @@ def main():
     subparsers.add_parser("reset-dagster", help="Reset Dagster state")
     subparsers.add_parser("reset-dlt", help="Reset dlt state")
     subparsers.add_parser("reset-warehouse", help="Reset warehouse state")
+    subparsers.add_parser("reset-source-data", help="Reset source data state")
     subparsers.add_parser("reset-all", help="Reset everything")
+
+    simulate_parser = subparsers.add_parser("generate-source-data", help="Generates source data")
+    simulate_parser.add_argument("--global-start-date", type=str, help="Global start date")
+    simulate_parser.add_argument("--global-end-date", type=str, help="Global end date")
 
     subparsers.add_parser("init-env", help="Create .env from .env.example with absolute paths")
 
@@ -148,6 +188,10 @@ def main():
         reset_dlt()
     elif args.command == "reset-warehouse":
         reset_warehouse()
+    elif args.command == "reset-source-data":
+        reset_source_data()
+    elif args.command == "generate-source-data":
+        generate_source_data(args)
     elif args.command == "reset-all":
         reset_all()
     elif args.command == "init-env":

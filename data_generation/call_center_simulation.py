@@ -1,7 +1,7 @@
 import datetime
 import os
 import random
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 import numpy as np
@@ -38,6 +38,10 @@ class SimulationConfig:
     write_csv: bool = True
     write_parquet: bool = True
     tables: list[str] = ("calls", "crm", "surveys", "agents", "managers", "agent_assignments")
+
+    def with_overrides(self, **kwargs) -> "SimulationConfig":
+        """Return a new SimulationConfig with some fields overridden."""
+        return replace(self, **kwargs)
 
     def generate_customers(self, faker_seed: int = 289, random_seed: int = 315) -> pd.DataFrame:
         fake = Faker()
@@ -402,9 +406,21 @@ def simulate_call_center(
         for survey_date, surveys in day_surveys_by_date.items():
             write_daily_parquet(records=surveys, output_dir=parquet_output_dir, table="surveys", date=survey_date)
 
+def main(**overrides):
+    """Run the call center simulation with optional config overrides."""
+    config_overrides = {k: v for k, v in overrides.items() if k not in ["seed_output_dir", "parquet_output_dir"]}
+    config = DEFAULT_CONFIG.with_overrides(**config_overrides) if config_overrides else DEFAULT_CONFIG
+
+    sim_kwargs = {"simulation_config": config}
+    if "seed_output_dir" in overrides:
+        sim_kwargs["seed_output_dir"] = overrides["seed_output_dir"]
+    if "parquet_output_dir" in overrides:
+        sim_kwargs["parquet_output_dir"] = overrides["parquet_output_dir"]
+
+    simulate_call_center(**sim_kwargs)
 
 if __name__ == "__main__":
-    simulate_call_center()
+    main()
 
 
 # OUTDATED: Going to model this so that dbt snapshots the value for the manager column
