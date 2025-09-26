@@ -68,6 +68,9 @@ Here's how the .dbt folder and profiles.yml are created:
 
 
 ### Data Generation
+* Update call volume patterns. Currently, the seasonality and weekday multipliers are being dwarfed by call times and arrivals.
+  * Basically, because agents are pretty much fully utilized, the desired call volume of ~3000 calls per day ends up being a third of that due to how long calls are taking, and that we cut things off at the workday end.
+  * See "Simulation Customer Overlap fix" conversation in ChatGPT project for more details/context.
 * Fully understand the gap of survey response times
   * Right now, the "day" partition is the day we receive the surveys
   * The staging partition re-runs everything minus a lookback window to cover this diff.

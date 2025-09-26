@@ -1,3 +1,4 @@
+import calendar
 import datetime
 import os
 import random
@@ -280,10 +281,11 @@ def simulate_call_center(
         print(f"crm: {crm_id_counter}")
         print(f"survey: {survey_id_counter}")
         day_date = day.date()
+        day_in_month = day_date.day
+        days_in_month = calendar.monthrange(day_date.year, day_date.month)[1]
+
         weekday_mult = simulation_config.weekday_multipliers[day_date.weekday()]
-        seasonal_mult = 1 + simulation_config.seasonality_amplitude * np.sin(
-            2 * np.pi * (day_date - simulation_config.global_start_date).days / 30
-        )
+        seasonal_mult = 1 + simulation_config.seasonality_amplitude * np.cos(2 * np.pi * (day_in_month / days_in_month))
         volume_mult = weekday_mult * seasonal_mult
 
         day_calls, day_crm = [], []
