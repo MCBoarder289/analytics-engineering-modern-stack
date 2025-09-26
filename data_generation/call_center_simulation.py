@@ -16,9 +16,9 @@ class SimulationConfig:
     global_start_date: datetime.date = GLOBAL_START_DATE
     global_end_date: datetime.date = GLOBAL_END_DATE
     programs: dict = field(default_factory=lambda: PROGRAMS.copy())
-    customers_count: int = 1500
     agents_count: int = 50
     managers_count: int = 5
+    customers_count: int | None = None  # see default setting below
     # Simulation parameters
     min_call_length: int = 20
     calls_per_agent_per_day: int = 60
@@ -38,6 +38,14 @@ class SimulationConfig:
     write_csv: bool = True
     write_parquet: bool = True
     tables: list[str] = ("calls", "crm", "surveys", "agents", "managers", "agent_assignments")
+
+    def __post_init__(self):
+        if self.customers_count is None:
+            object.__setattr__(
+                self,
+                "customers_count",
+                self.agents_count * self.calls_per_agent_per_day * 20,
+            )
 
     def with_overrides(self, **kwargs) -> "SimulationConfig":
         """Return a new SimulationConfig with some fields overridden."""
@@ -261,6 +269,11 @@ def simulate_call_center(
     call_id_counter, crm_id_counter, survey_id_counter = 0, 0, 0
     pending_callbacks = []
 
+    customer_busy_until = {
+        cid: datetime.datetime.combine(simulation_config.global_start_date, datetime.time.min)
+        for cid in customers["customer_id"]
+    }
+
     for day in pd.date_range(simulation_config.global_start_date, simulation_config.global_end_date):
         print(f"Simulation start for day: {day}")
         print(f"calls: {call_id_counter}")
@@ -280,7 +293,7 @@ def simulate_call_center(
 
         for _, agent_id in agents["agent_id"].items():
             n_calls = int(simulation_config.calls_per_agent_per_day * volume_mult)
-            start_time = datetime.datetime.combine(day_date, datetime.datetime.min.time()) + datetime.timedelta(
+            start_time = datetime.datetime.combine(day_date, datetime.time.min) + datetime.timedelta(
                 hours=simulation_config.workday_start
             )
 
@@ -289,25 +302,43 @@ def simulate_call_center(
             rng.shuffle(work_items)
 
             for item in work_items:
+                hold_time = simulate_hold_time(rng)
+                inter_arrival = rng.exponential(scale=simulation_config.mean_seconds_between_calls)
+                start_time = start_time + datetime.timedelta(seconds=hold_time + inter_arrival)
+
                 if item != "new" and isinstance(item, dict):  # callback
-                    customer = customers[customers["customer_id"] == item["customer_id"]]
+                    customer_id = item["customer_id"]
+                    customer = customers[customers["customer_id"] == customer_id]
                     reason, subreason = item["reason"], item["subreason"]
                     previous_issue_flag = rng.random() < simulation_config.previous_issue_rate
                     reason, subreason, duration = get_call_reasons_plus_duration(simulation_config=simulation_config,
                         program_key=customer["program"].item(), rng=rng, reason=reason, subreason=subreason
                     )
-                else:
-                    customer_idx = rng.integers(0, len(customers))
-                    customer = customers.iloc[[customer_idx]]
+
+                else:  # Select a free customer (fixed attempts)
+                    customer = None
+                    customer_id = None
+
+                    for _ in range(15):
+
+                        customer_idx = rng.integers(0, len(customers))
+                        customer = customers.iloc[[customer_idx]]
+                        customer_id = customer["customer_id"].item()
+
+                        if start_time >= customer_busy_until[customer_id]:
+                            break
+
+                    if customer is None:
+                        raise RuntimeError(f"No free customer found after 15 attempts at {start_time}")
+
                     reason, subreason, duration = get_call_reasons_plus_duration( simulation_config=simulation_config,
                         program_key=customer["program"].item(), rng=rng
                     )
                     previous_issue_flag = False
 
-                hold_time = simulate_hold_time(rng)
-                inter_arrival = rng.exponential(scale=simulation_config.mean_seconds_between_calls)
-                start_time = start_time + datetime.timedelta(seconds=hold_time + inter_arrival)
+
                 end_ts = start_time + datetime.timedelta(seconds=duration)
+                customer_busy_until[customer_id] = end_ts
 
                 # Stop work items if there isn't enough time in workday
                 if end_ts.hour >= simulation_config.workday_end:
@@ -321,7 +352,7 @@ def simulate_call_center(
                 call = {
                     "call_id": call_id,
                     "agent_id": agent_id,
-                    "customer_id": customer["customer_id"].item(),
+                    "customer_id": customer_id,
                     "queue_hold_time": hold_time,
                     "start_ts": start_time,
                     "end_ts": end_ts,
@@ -338,7 +369,7 @@ def simulate_call_center(
                     "crm_id": crm_id_counter,
                     "agent_id": agent_id,
                     "call_id": call_id,
-                    "customer_id": customer["customer_id"].item(),
+                    "customer_id": customer_id,
                     "reason_code": reason,
                     "sub_reason_code": subreason,
                     "previous_issue_flag": previous_issue_flag,
@@ -371,7 +402,7 @@ def simulate_call_center(
                         "survey_id": survey_id_counter,
                         "call_id": call_id,
                         "agent_id": agent_id,
-                        "customer_id": customer["customer_id"].item(),
+                        "customer_id": customer_id,
                         "sent_ts": end_ts + datetime.timedelta(seconds=5),
                         "response_ts": response_ts,
                         "csat": csat,
@@ -388,11 +419,13 @@ def simulate_call_center(
                         cb_agent = other_agents.iloc[[rng.integers(0, len(other_agents))]]
                         pending_callbacks.append({
                             "day": future_day,
-                            "customer_id": customer["customer_id"].item(),
+                            "customer_id": customer_id,
                             "reason": reason,
                             "subreason": subreason,
                             "agent_id": cb_agent["agent_id"].item(),
                         })
+                        # reserve the customer until the callback day starts (prevents being chosen before)
+                        customer_busy_until[customer_id] = datetime.datetime.combine(future_day, datetime.time.min)
                 # need to kick off the next call as another time after the duration of the call
                 # so the inter-arrival time will get added next time start_time is reassigned
                 start_time = end_ts
@@ -406,6 +439,7 @@ def simulate_call_center(
         for survey_date, surveys in day_surveys_by_date.items():
             write_daily_parquet(records=surveys, output_dir=parquet_output_dir, table="surveys", date=survey_date)
 
+
 def main(**overrides):
     """Run the call center simulation with optional config overrides."""
     config_overrides = {k: v for k, v in overrides.items() if k not in ["seed_output_dir", "parquet_output_dir"]}
@@ -417,7 +451,11 @@ def main(**overrides):
     if "parquet_output_dir" in overrides:
         sim_kwargs["parquet_output_dir"] = overrides["parquet_output_dir"]
 
+    start_time = datetime.datetime.now()
     simulate_call_center(**sim_kwargs)
+    end_time = datetime.datetime.now()
+
+    print(f"COMPLETE: Simulation took {end_time - start_time} seconds.")
 
 if __name__ == "__main__":
     main()

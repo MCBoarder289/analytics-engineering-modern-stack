@@ -27,7 +27,7 @@ PROD_WAREHOUSE_PATH = WAREHOUSE_DIR / "warehouse_prod.duckdb"
 
 DATA_DIR = BASE_DIR / "data"
 
-def init_env():
+def init_env(no_prompt=False):
     if not ENV_EXAMPLE.exists():
         print(f"{ENV_EXAMPLE} does not exist. Cannot create .env.")
         return
@@ -39,7 +39,7 @@ def init_env():
     content = content.replace("/path/to/analytics_system/.dagster_home", str(DAGSTER_HOME.resolve()))
 
     # Write to .env, but don't overwrite unless confirmed
-    if ENV_FILE.exists():
+    if ENV_FILE.exists() and not no_prompt:
         confirm = input(f"{ENV_FILE} already exists. Overwrite? [y/N]: ").strip().lower()
         if confirm != "y":
             print("Aborting .env creation.")
@@ -83,7 +83,7 @@ def init_env():
         str(INGEST_SURVEYS_WAREHOUSE.resolve())
     )
 
-    if PROFILES_YAML_FILE.exists():
+    if PROFILES_YAML_FILE.exists() and not no_prompt:
         confirm = input(f"{PROFILES_YAML_FILE} already exists. Overwrite? [y/N]: ").strip().lower()
         if confirm != "y":
             print("Aborting profiles.yml creation.")
@@ -157,8 +157,8 @@ def reset_all():
     """Reset everything: dagster, dlt, warehouse, and source data."""
     reset_dagster()
     reset_dlt()
-    reset_warehouse()
     reset_source_data()
+    reset_warehouse()
 
 
 def main():
@@ -177,7 +177,8 @@ def main():
     simulate_parser.add_argument("--global-start-date", type=str, help="Global start date")
     simulate_parser.add_argument("--global-end-date", type=str, help="Global end date")
 
-    subparsers.add_parser("init-env", help="Create .env from .env.example with absolute paths")
+    init_env_parser = subparsers.add_parser("init-env", help="Create .env from .env.example with absolute paths")
+    init_env_parser.add_argument("--no-prompt", action="store_true", help="Do not prompt before overwriting files")
 
 
     args = parser.parse_args()
@@ -195,7 +196,7 @@ def main():
     elif args.command == "reset-all":
         reset_all()
     elif args.command == "init-env":
-        init_env()
+        init_env(no_prompt=getattr(args, "no_prompt", False))
 
 
 if __name__ == "__main__":
