@@ -28,6 +28,7 @@ with source as (
         ,s.hold_time_during_call_s
         ,s.transfer_flag
         ,row_number() over (partition by s.call_id order by dlt.inserted_at desc) as row_number
+        ,NOW() as warehouse_updated_ts
 
       from source s
 
@@ -50,6 +51,7 @@ with source as (
     ,duration_s
     ,hold_time_during_call_s
     ,transfer_flag
+    ,warehouse_updated_ts
     
     from latest_records
 

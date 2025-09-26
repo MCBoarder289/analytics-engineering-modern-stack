@@ -27,6 +27,7 @@ with source as (
         ,s.previous_issue_flag
         ,s.created_ts
         ,row_number() over (partition by s.crm_id order by dlt.inserted_at desc) as row_number
+        ,NOW() as warehouse_updated_ts
 
       from source s
 
@@ -48,6 +49,7 @@ select
     ,sub_reason_code
     ,previous_issue_flag
     ,created_ts
+    ,warehouse_updated_ts
 
     from latest_records
 

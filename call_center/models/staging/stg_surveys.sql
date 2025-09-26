@@ -10,11 +10,8 @@
 with source as (
     select * 
     from {{ source('ingest_surveys', 'surveys') }}
-    {# In the incremental block, can add a lookback window that will subtract x days fromt the start date #}
     {% if is_incremental() %}
-        where response_ts between 
-        cast(date_add(DATE '{{ var("start_date") }}', -{{ var("lookback_days", 5) }}) as date)
-            and DATE '{{ var("end_date") }}' 
+        where response_ts between '{{ var("start_date") }}' and '{{ var("end_date") }}' 
     {% endif %}
   ),
   {# This is a good example to have students handle de-duplication here vs. in ingest #}
@@ -29,6 +26,7 @@ with source as (
         ,s.csat
         ,s.nps
         ,row_number() over (partition by s.survey_id order by dlt.inserted_at desc) as row_number
+        ,NOW() as warehouse_updated_ts 
 
       from source s
 
@@ -50,6 +48,7 @@ with source as (
     ,response_ts
     ,csat
     ,nps
+    ,warehouse_updated_ts
 
     from latest_records
 
