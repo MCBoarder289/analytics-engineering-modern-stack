@@ -47,11 +47,11 @@ models:
     description: ""
     columns:
       - name: crm_id
+        data_type: bigint
+        description: "Unique identifier for the crm record in the crm system"
         data_tests:
           - unique
           - not_null
-        data_type: bigint
-        description: "Unique identifier for the crm record in the crm system"
 
       - name: agent_id
         data_type: bigint
