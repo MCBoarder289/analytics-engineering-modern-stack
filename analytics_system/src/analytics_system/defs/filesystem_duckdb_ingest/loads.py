@@ -22,8 +22,10 @@ def parquet_day_partition(dataset: str, date_partition: str):
     """Helper function to dynamically produce the boilerplate glob access of the raw source files"""
     abs_path = os.path.abspath(os.path.join(SOURCE_DATA_DIR_PATH, f"{dataset}/day={date_partition}/"))
     partition_path = f"file://{abs_path}"
+    new_files = filesystem(partition_path, file_glob="*.parquet")
+    new_files.apply_hints(incremental=dlt.sources.incremental("modification_date"))
     # Need to add the "type: ignore" to the method chaining that dlt supports (piping into read_parquet())
-    return filesystem(partition_path, file_glob="*.parquet") | read_parquet()  # type: ignore
+    return new_files | read_parquet()  # type: ignore
 
 
 def date_range_list(start_date: str, end_date: str) -> list[str]:
@@ -74,7 +76,7 @@ def filesystem_surveys_source(date_partition: str | list[str] | None = None):
     dlt_source=filesystem_calls_source(),
     name="calls_ingestion_assets",
     dlt_pipeline=dlt.pipeline(
-        pipeline_name="raw_calls_ingestion",
+        pipeline_name="filesystem_calls_source",  # Needs to match the dlt.source name to avoid state issues
         pipelines_dir=DLT_STATE_LOCATION_ABS_PATH,
         dataset_name="raw_calls",
         destination=dlt.destinations.duckdb(INGEST_CALLS_ABS_PATH),
@@ -94,7 +96,7 @@ def calls_ingestion(context: AssetExecutionContext, dlt: DagsterDltResource):
     dlt_source=filesystem_crm_source(),
     name="crm_ingestion_assets",
     dlt_pipeline=dlt.pipeline(
-        pipeline_name="raw_crm_ingestion",
+        pipeline_name="filesystem_crm_source",  # Needs to match the dlt.source name to avoid state issues
         pipelines_dir=DLT_STATE_LOCATION_ABS_PATH,
         dataset_name="raw_crm",
         destination=dlt.destinations.duckdb(INGEST_CRM_ABS_PATH)
@@ -114,7 +116,7 @@ def crm_ingestion(context: AssetExecutionContext, dlt: DagsterDltResource):
     dlt_source=filesystem_surveys_source(),
     name="survey_ingestion_assets",
     dlt_pipeline=dlt.pipeline(
-        pipeline_name="raw_surveys_ingestion",
+        pipeline_name="filesystem_surveys_source",  # Needs to match the dlt.source name to avoid state issues
         pipelines_dir=DLT_STATE_LOCATION_ABS_PATH,
         dataset_name="raw_surveys",
         destination=dlt.destinations.duckdb(INGEST_SURVEYS_ABS_PATH),
@@ -153,27 +155,30 @@ def surveys_ingestion(context: AssetExecutionContext, dlt: DagsterDltResource):
 # absolute pathing structure. In a production deployment, this would likely be a remote location vs. a local one.
 
 # pipeline = dlt.pipeline(
-#     pipeline_name="raw_calls_ingestion",
-#     dataset_name="raw_calls",
-#     destination=dlt.destinations.duckdb(INGEST_CALLS_ABS_PATH),
+#         pipeline_name="filesystem_calls_source",  # Needs to match the dlt.source name to avoid state issues
+#         pipelines_dir=DLT_STATE_LOCATION_ABS_PATH,
+#         dataset_name="raw_calls",
+#         destination=dlt.destinations.duckdb(INGEST_CALLS_ABS_PATH),
 # )
 #
 # load_info = pipeline.run(filesystem_calls_source(date_partition="2025-01-01"))
 # print(load_info)
-#
-# pipeline = dlt.pipeline(
-#     pipeline_name="raw_crm_ingestion",
-#     dataset_name="raw_crm",
-#     destination=dlt.destinations.duckdb(INGEST_CRM_ABS_PATH),
+
+# pipeline =dlt.pipeline(
+#         pipeline_name="filesystem_crm_source",
+#         pipelines_dir=DLT_STATE_LOCATION_ABS_PATH,
+#         dataset_name="raw_crm",
+#         destination=dlt.destinations.duckdb(INGEST_CRM_ABS_PATH)
 # )
 #
 # load_info = pipeline.run(filesystem_crm_source(date_partition="2025-01-01"))
 # print(load_info)
 #
 # pipeline = dlt.pipeline(
-#     pipeline_name="raw_surveys_ingestion",
-#     dataset_name="raw_surveys",
-#     destination=dlt.destinations.duckdb(INGEST_SURVEYS_ABS_PATH),
+#         pipeline_name="filesystem_surveys_source",
+#         pipelines_dir=DLT_STATE_LOCATION_ABS_PATH,
+#         dataset_name="raw_surveys",
+#         destination=dlt.destinations.duckdb(INGEST_SURVEYS_ABS_PATH),
 # )
 #
 # load_info = pipeline.run(filesystem_surveys_source(date_partition="2025-01-01"))

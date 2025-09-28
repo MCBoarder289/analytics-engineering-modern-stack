@@ -7,6 +7,22 @@
   * ex: hierarchical summaries for managers, agents
   * ex: summarized/aggregated tables daily
 
+## dlt stuff
+* [DONE] Incremental partition problems:
+  * I want the filesystem source to be idempotent based on the modification_date of the files in the directories, but this has posed a problem.
+  * When I first run the pipeline, the state doesn't update for both my source and pipeline, just the source. A second run will duplicate, but then it will be idempotent after that.
+  * I think I've identified the issue as somehow related to the source decorator and how dagster has to instantiate the source
+    * See [dlt slack question](https://dlthub-community.slack.com/archives/C04DQA7JJN6/p1758997014552919?thread_ts=1758995720.987159&cid=C04DQA7JJN6)
+  * RESOLUTION: I ended up needing to name the pipeline name the same thing as the soruce's name/function name. That way, the state that is saved ends up being shared properly.
+    * See [dagster slack thread](https://dagster.slack.com/archives/C066HKS7EG1/p1759021949908949?thread_ts=1759019650.736699&cid=C066HKS7EG1)
+
+## Performance
+* Noticed dagster says runs take at least 1 minute, even if the processing is in sub-second completions.
+  * For example, A run that completed in 262ms, says it took 1:04.
+    * Only step log message: Finished execution of step "calls_ingestion_assets" in 269ms.
+    * Then a minute later we get: Multiprocess executor: parent process exiting after 1m3s (pid: 22822)
+    * I wonder if this is all due to some weird polling due to multiprocessing queues in local dev?
+
 ## dbt stuff
 * need to add instructions on setting up their local profiles.yml
   * Give example of a profiles.yml
