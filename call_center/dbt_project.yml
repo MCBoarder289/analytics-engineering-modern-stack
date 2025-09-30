@@ -36,6 +36,8 @@ models:
       +group: staging_data
     seed_views:
       +group: seed_data
+    data_marts:
+      +group: data_marts
 
 seeds:
   call_center:

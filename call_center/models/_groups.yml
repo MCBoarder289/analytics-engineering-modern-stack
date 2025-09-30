@@ -9,6 +9,14 @@ groups:
     owner:
       name: "Student"
 
+  - name: data_marts
+    owner:
+      name: "Student"
+
+  - name: seed_tests
+    owner:
+      name: "Student"
+
   - name: analytics
     owner:
       name: "Student"

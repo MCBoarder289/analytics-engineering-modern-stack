@@ -1,16 +1,18 @@
 {# Config block at beginning to handle incremental loads #}
 
-{{ config(
+{{ 
+    config(
     materialized='incremental',
     unique_key='crm_id',
     incremental_strategy='delete+insert',
     tags=["daily"]
-) }}
+    ) 
+}}
 
 with source as (
     select * 
     from {{ source('ingest_crm', 'crm') }}
-    {# In the incremental block, can add a lookback window that will subtract x days fromt the start date #}
+    {# In the incremental block, can add a lookback window that will subtract x days from the start date #}
     {% if is_incremental() %}
         where created_ts between '{{ var("start_date") }}' and '{{ var("end_date") }}' 
     {% endif %}

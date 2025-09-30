@@ -14,6 +14,7 @@
     * see [customizing dbt automation conditions](https://docs.dagster.io/integrations/libraries/dbt/reference#customizing-automation-conditions)
 * Seeing a 60-second gap between dlt sources and dbt downstream asset jobs starting
   * Need to figure out why this has been introduced as of recent commits (9/28/25)
+  * Not seeing this anymore, and could have been a transient system issue? Will continue to monitor
 
 ## dlt stuff
 * Incremental partition problems:
@@ -30,6 +31,8 @@
     * Only step log message: Finished execution of step "calls_ingestion_assets" in 269ms.
     * Then a minute later we get: Multiprocess executor: parent process exiting after 1m3s (pid: 22822)
     * I wonder if this is all due to some weird polling due to multiprocessing queues in local dev?
+* Noticing intermittent failures which are due to a race condition of attaching ingestion duckdb files to the dbt connection
+  * Can easily re-run failed portions to resolve the issue, but might be worth hardening.
 
 ## dbt stuff
 * need to add instructions on setting up their local profiles.yml

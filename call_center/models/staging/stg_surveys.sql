@@ -1,11 +1,13 @@
 {# Config block at beginning to handle incremental loads #}
 
-{{ config(
+{{ 
+    config(
     materialized='incremental',
     unique_key='survey_id',
     incremental_strategy='delete+insert',
     tags=["daily"]
-) }}
+    ) 
+}}
 
 with source as (
     select * 

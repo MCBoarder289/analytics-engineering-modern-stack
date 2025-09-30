@@ -4,7 +4,7 @@ models:
   - name: test_agent_assignments
     description: Tracks the temporal assignments of agents to managers
     config:
-      group: seed_data
+      group: seed_tests
     columns:
       - name: agent_id
         data_type: bigint
