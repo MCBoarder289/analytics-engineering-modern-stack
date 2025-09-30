@@ -22,10 +22,8 @@ def parquet_day_partition(dataset: str, date_partition: str):
     """Helper function to dynamically produce the boilerplate glob access of the raw source files"""
     abs_path = os.path.abspath(os.path.join(SOURCE_DATA_DIR_PATH, f"{dataset}/day={date_partition}/"))
     partition_path = f"file://{abs_path}"
-    new_files = filesystem(partition_path, file_glob="*.parquet")
-    new_files.apply_hints(incremental=dlt.sources.incremental("modification_date"))
     # Need to add the "type: ignore" to the method chaining that dlt supports (piping into read_parquet())
-    return new_files | read_parquet()  # type: ignore
+    return filesystem(partition_path, file_glob="*.parquet") | read_parquet()  # type: ignore
 
 
 def date_range_list(start_date: str, end_date: str) -> list[str]:

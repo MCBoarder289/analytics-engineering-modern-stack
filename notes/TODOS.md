@@ -12,11 +12,11 @@
   * Not sure if this is possible, but the declarative automation parts of a dagster asset would potentially work?
     * see [dagster docs on automation conditions](https://docs.dagster.io/guides/automate/declarative-automation/customizing-automation-conditions/customizing-on-missing-condition#updating-older-time-partitions)
     * see [customizing dbt automation conditions](https://docs.dagster.io/integrations/libraries/dbt/reference#customizing-automation-conditions)
-* Seeing a 60 second gap between dlt sources and dbt downstream asset jobs starting
-  * Need to figure out why this has been introduce as of recent commits (9/28/25)
+* Seeing a 60-second gap between dlt sources and dbt downstream asset jobs starting
+  * Need to figure out why this has been introduced as of recent commits (9/28/25)
 
 ## dlt stuff
-* [DONE] Incremental partition problems:
+* Incremental partition problems:
   * I want the filesystem source to be idempotent based on the modification_date of the files in the directories, but this has posed a problem.
   * When I first run the pipeline, the state doesn't update for both my source and pipeline, just the source. A second run will duplicate, but then it will be idempotent after that.
   * I think I've identified the issue as somehow related to the source decorator and how dagster has to instantiate the source
