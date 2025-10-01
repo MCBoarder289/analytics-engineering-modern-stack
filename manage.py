@@ -25,6 +25,8 @@ PROFILES_YAML_FILE = BASE_DIR / "call_center" / "profiles.yml"
 DEV_WAREHOUSE_PATH = WAREHOUSE_DIR / "warehouse_dev.duckdb"
 PROD_WAREHOUSE_PATH = WAREHOUSE_DIR / "warehouse_prod.duckdb"
 
+METABASE_DATA_PATH = BASE_DIR / "data_vis_metabase" / "pgdata"
+
 DATA_DIR = BASE_DIR / "data"
 
 def init_env(no_prompt=False):
@@ -136,6 +138,11 @@ def reset_source_data():
     """Reset source data."""
     _confirm_and_delete(DATA_DIR, preserve=["warehouse"])
 
+
+def reset_metabase_data():
+    """Reset metabase data."""
+    _confirm_and_delete(METABASE_DATA_PATH)
+
 def generate_source_data(args):
     """
     Run the call center simulation.
@@ -152,13 +159,6 @@ def generate_source_data(args):
         overrides["global_end_date"] = datetime.datetime.strptime(args.global_end_date, "%Y-%m-%d").date()
 
     run_simulation(**overrides)
-
-def reset_all():
-    """Reset everything: dagster, dlt, warehouse, and source data."""
-    reset_dagster()
-    reset_dlt()
-    reset_source_data()
-    reset_warehouse()
 
 
 def main():
@@ -182,7 +182,7 @@ def main():
     reset_parser.add_argument(
         "targets",
         nargs="+",
-        choices=["dagster", "dlt", "warehouse", "source-data", "all"],
+        choices=["dagster", "dlt", "warehouse", "source-data", "metabase",  "all"],
         help="Which components to reset",
     )
 
@@ -194,6 +194,7 @@ def main():
             reset_dlt()
             reset_warehouse()
             reset_source_data()
+            reset_metabase_data()
         else:
             for target in args.targets:
                 {
@@ -201,6 +202,7 @@ def main():
                     "dlt": reset_dlt,
                     "warehouse": reset_warehouse,
                     "source-data": reset_source_data,
+                    "metabase": reset_metabase_data
                 }[target]()
     elif args.command == "generate-source-data":
         generate_source_data(args)

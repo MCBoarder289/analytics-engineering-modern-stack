@@ -6,6 +6,12 @@
 * Build `'mart_` tables for operational analytics
   * ex: hierarchical summaries for managers, agents
   * ex: summarized/aggregated tables daily
+* Update data generation for:
+  * Variable survey take rates by call reason / customer program
+  * [DONE] Make NPS score more relatable (currently basically 0)
+* Test what incremental loading looks like for agent/daily aggregation tables
+  * Do I need a unique/composite unique key? Will it work with just the dates?
+
 
 ## dagster stuff
 * Update automation conditions for partitions that are retroactively updated

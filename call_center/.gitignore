@@ -4,3 +4,5 @@ dbt_packages/
 logs/
 
 profiles.yml
+
+package-lock.concurrent-update-lock

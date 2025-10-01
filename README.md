@@ -74,6 +74,11 @@ uv run python manage.py reset dlt
 uv run python manage.py reset warehouse
 ```
 
+### Clear Metabase BI/Visualization state
+```bash
+uv run python manage.py reset metabase
+```
+
 #### Clear all state
 ```bash
 uv run python manage.py reset all

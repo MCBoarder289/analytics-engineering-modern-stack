@@ -28,4 +28,4 @@ WAREHOUSE_FILE_ABS_PATH = os.path.abspath(warehouse_dir / "warehouse_dev.duckdb"
 SOURCE_DATA_DIR_PATH = pathlib.Path(__file__).parent.parent.parent.parent.resolve() / "data"
 
 GLOBAL_START_DATE = "2025-01-01"
-GLOBAL_END_DATE = "2025-03-31"
+GLOBAL_END_DATE = "2025-04-01"  # plus one from the data's largest date to line partitions up

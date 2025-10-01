@@ -10,6 +10,7 @@ import pandas as pd
 from faker import Faker
 
 from data_generation.constants import GLOBAL_END_DATE, GLOBAL_START_DATE, PROGRAMS, WEEKDAY_MULTIPLIERS
+from data_generation.helpers import generate_nps
 
 
 @dataclass(frozen=True)
@@ -124,7 +125,7 @@ def get_call_reasons_plus_duration(
     rng: np.random.Generator,
     reason: str | None = None,
     subreason: str | None = None,
-):
+) -> tuple[str, str, int]:
     if reason and subreason:
         reason_record = [
             reason_record
@@ -147,7 +148,7 @@ def get_call_reasons_plus_duration(
         reasons = simulation_config.programs[program_key]["reasons"]
         reason_probs = [r["prob"] for r in reasons]
 
-        reason =rng.choice(reasons, p=reason_probs)
+        reason = rng.choice(reasons, p=reason_probs)
         sub_reasons = reason["sub_reasons"]
         sub_probs = [s["prob"] for s in sub_reasons]
 
@@ -158,7 +159,7 @@ def get_call_reasons_plus_duration(
             simulation_config.min_call_length, int(rng.normal(sub_reason["duration_mean"], sub_reason["duration_std"]))
         )
 
-        return reason["name"], sub_reason["name"], duration
+        return str(reason["name"]), str(sub_reason["name"]), duration
 
 
 def distribute_agents_to_managers(
@@ -348,6 +349,8 @@ def simulate_call_center(
 
                 transfer = rng.random() < simulation_config.transfer_rate
 
+                hold_time_during_call = rng.integers(0, duration // 2, endpoint=True)
+
                 # Telephony record
                 call_id_counter += 1
                 call_id = call_id_counter
@@ -359,7 +362,7 @@ def simulate_call_center(
                     "start_ts": start_time,
                     "end_ts": end_ts,
                     "duration_s": duration,
-                    "hold_time_during_call_s": rng.integers(0,60, endpoint=True),
+                    "hold_time_during_call_s": hold_time_during_call,
                     "transfer_flag": transfer,
                 }
 
@@ -389,16 +392,12 @@ def simulate_call_center(
                     )
                     csat = int(
                         np.clip(
-                            rng.normal(4 if not transfer and hold_time < 60 else 3, 1),
+                            rng.normal(4 if not transfer or hold_time_during_call < 60 else 2, 1),
                             a_min=1,
                             a_max=5)
                     )
-                    nps = int(
-                        np.clip(
-                            rng.normal(7 if not transfer and hold_time < 60 and not previous_issue_flag else 5, 1.5),
-                            a_min=1,
-                            a_max=10
-                        )
+                    nps = generate_nps(
+                        rng=rng, transfer=transfer, hold_time=hold_time, previous_issue_flag=previous_issue_flag
                     )
                     survey = {
                         "survey_id": survey_id_counter,
