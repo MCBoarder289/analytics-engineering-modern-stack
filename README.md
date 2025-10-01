@@ -5,7 +5,7 @@
 The data_generation directory contains the code that will generate data for the project.
 It contains logic that can be tweaked to produce different datasets.
 
-Currently, everything is keyed off of the "call date", but the surveys are intentionally keyed off of "survey" date".
+Currently, everything is keyed off of the "call date", but the surveys are intentionally keyed off of the survey's response date.
 This is to emulate late-arriving data realistically.
 
 ## Sequence of project development
@@ -26,6 +26,11 @@ After setting up the primary data model, the next steps will follow the DAG line
 
 ## Managing Environments
 
+### Generating source data
+```bash
+uv run python manage.py generate-source-data
+```
+
 ### Setting up Dagster
 You need to make your Dagster environment persistent so that when you run assets/pipelines, those states are saved.
 To do this, you need to copy the `.env.example` file to a `.env` files and update the path to be the specific location.
@@ -36,28 +41,40 @@ uv run python manage.py init-env
 ```
 If there is a .env file present, it will ask if you want to overwrite it.
 
+If you want to do this without answering the prompts, simply pass the `-no-prompt` flag:
+```bash
+uv run python manage.py init-env --no-prompt
+```
+
 ### Cleaning up and resetting environment
 
 Because this project runs locally, there may be times when you need to clear things out and start fresh.
 The following commands should help you reset state for the various components (dlt state, warehouse state, dagster state, etc.)
 You need to run these commands from the root of this project.
 
-### Clear dagster state
+You can also combine any options (dagster, dlt, warehouse, source-data) into a single command.
+Simply provide the options after one another, as in this example that will clear eveyrthing but the source data:
+
 ```bash
-uv run python manage.py reset-dagster
+uv run python manage.py reset dagster dlt warehouse
 ```
 
-### Clear dlt state
+#### Clear dagster state
 ```bash
-uv run python manage.py reset-dlt
+uv run python manage.py reset dagster
 ```
 
-### Clear warehouse state
+#### Clear dlt state
 ```bash
-uv run python manage.py reset-warehouse
+uv run python manage.py reset dlt
 ```
 
-### Clear all state
+#### Clear warehouse state
 ```bash
-uv run python manage.py reset-all
+uv run python manage.py reset warehouse
+```
+
+#### Clear all state
+```bash
+uv run python manage.py reset all
 ```

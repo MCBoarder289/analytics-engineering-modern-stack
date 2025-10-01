@@ -167,34 +167,43 @@ def main():
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    subparsers.add_parser("reset-dagster", help="Reset Dagster state")
-    subparsers.add_parser("reset-dlt", help="Reset dlt state")
-    subparsers.add_parser("reset-warehouse", help="Reset warehouse state")
-    subparsers.add_parser("reset-source-data", help="Reset source data state")
-    subparsers.add_parser("reset-all", help="Reset everything")
-
-    simulate_parser = subparsers.add_parser("generate-source-data", help="Generates source data")
+    simulate_parser = subparsers.add_parser(
+        "generate-source-data", help="Generates source data simulating the call center"
+    )
     simulate_parser.add_argument("--global-start-date", type=str, help="Global start date")
     simulate_parser.add_argument("--global-end-date", type=str, help="Global end date")
 
-    init_env_parser = subparsers.add_parser("init-env", help="Create .env from .env.example with absolute paths")
+    init_env_parser = subparsers.add_parser(
+        "init-env", help="Initialize environment (.env files and initial database destinations)"
+    )
     init_env_parser.add_argument("--no-prompt", action="store_true", help="Do not prompt before overwriting files")
 
+    reset_parser = subparsers.add_parser("reset", help="Reset state for the various targets")
+    reset_parser.add_argument(
+        "targets",
+        nargs="+",
+        choices=["dagster", "dlt", "warehouse", "source-data", "all"],
+        help="Which components to reset",
+    )
 
     args = parser.parse_args()
 
-    if args.command == "reset-dagster":
-        reset_dagster()
-    elif args.command == "reset-dlt":
-        reset_dlt()
-    elif args.command == "reset-warehouse":
-        reset_warehouse()
-    elif args.command == "reset-source-data":
-        reset_source_data()
+    if args.command == "reset":
+        if "all" in args.targets:
+            reset_dagster()
+            reset_dlt()
+            reset_warehouse()
+            reset_source_data()
+        else:
+            for target in args.targets:
+                {
+                    "dagster": reset_dagster,
+                    "dlt": reset_dlt,
+                    "warehouse": reset_warehouse,
+                    "source-data": reset_source_data,
+                }[target]()
     elif args.command == "generate-source-data":
         generate_source_data(args)
-    elif args.command == "reset-all":
-        reset_all()
     elif args.command == "init-env":
         init_env(no_prompt=getattr(args, "no_prompt", False))
 
