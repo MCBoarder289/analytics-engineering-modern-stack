@@ -9,7 +9,13 @@ import numpy as np
 import pandas as pd
 from faker import Faker
 
-from data_generation.constants import GLOBAL_END_DATE, GLOBAL_START_DATE, PROGRAMS, WEEKDAY_MULTIPLIERS
+from data_generation.constants import (
+    GLOBAL_END_DATE,
+    GLOBAL_START_DATE,
+    PROGRAMS,
+    SENTINEL_END_DATE,
+    WEEKDAY_MULTIPLIERS,
+)
 from data_generation.helpers import generate_nps
 
 
@@ -211,13 +217,11 @@ def distribute_agents_to_managers(
                 "agent_id": agent["agent_id"],
                 "manager_id": manager_id,
                 "effective_start": current_start,
-                "effective_end": pd.to_datetime(end_date),
+                "effective_end": pd.to_datetime(SENTINEL_END_DATE),
             }
         )
 
     assignments_df = pd.DataFrame(assignments)
-    mask = assignments_df['effective_end'] == pd.to_datetime(end_date)
-    assignments_df.loc[mask, 'effective_end'] = pd.NaT
 
     return assignments_df
 

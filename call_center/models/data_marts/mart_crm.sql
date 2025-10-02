@@ -3,7 +3,7 @@
   config(
     materialized = 'incremental',
     unique_key = 'crm_id',
-    incremental_strategy='delete_insert',
+    incremental_strategy='delete+insert',
     tags=["daily"]
     )
 }}

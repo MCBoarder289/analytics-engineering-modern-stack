@@ -38,6 +38,8 @@ models:
       +group: seed_data
     data_marts:
       +group: data_marts
+    ops_analysis:
+      +group: ops_analysis
 
 seeds:
   call_center:

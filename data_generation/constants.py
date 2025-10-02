@@ -3,6 +3,8 @@ import datetime
 GLOBAL_START_DATE = datetime.date(2025, 1, 1)
 GLOBAL_END_DATE = datetime.date(2025, 3, 31)
 
+SENTINEL_END_DATE = datetime.date(2262, 4, 11)  # max possible in pandas numpy.datetime64[ns]
+
 # For modeling seasonality
 WEEKDAY_MULTIPLIERS = {
     0: 1.2,  # Monday
