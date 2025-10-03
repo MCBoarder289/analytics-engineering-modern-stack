@@ -68,6 +68,11 @@ Start the Dagster UI web server:
 dg dev
 ```
 
+### Launching assets/pipelines from the dg cli
+```bash
+dg launch --assets dlt_filesystem_calls_source_calls --partition-range 2025-01-01...2025-01-05
+```
+
 Open http://localhost:3000 in your browser to see the project.
 
 ## Learn more

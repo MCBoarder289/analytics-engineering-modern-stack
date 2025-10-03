@@ -12,6 +12,10 @@
 * Test what incremental loading looks like for agent/daily aggregation tables
   * Do I need a unique/composite unique key? Will it work with just the dates?
 
+## CLI Work
+* Need to hydrate problematic data that will fail certain tests:
+    * Duplicate records for primary keys
+    * Survey records with invalid responses (ex: NPS is not between 1 and 10)
 
 ## dagster stuff
 * Update automation conditions for partitions that are retroactively updated

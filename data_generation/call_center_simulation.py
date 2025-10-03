@@ -281,7 +281,7 @@ def simulate_call_center(
     }
 
     for day in pd.date_range(simulation_config.global_start_date, simulation_config.global_end_date):
-        print(f"Simulation start for day: {day}")
+        print(f"Simulation start for day: {day.date()}")
         print(f"calls: {call_id_counter}")
         print(f"crm: {crm_id_counter}")
         print(f"survey: {survey_id_counter}")

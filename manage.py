@@ -186,6 +186,8 @@ def main():
         help="Which components to reset",
     )
 
+    subparsers.add_parser("week1", help="Reset state for week1 assignments")
+
     args = parser.parse_args()
 
     if args.command == "reset":
@@ -208,6 +210,29 @@ def main():
         generate_source_data(args)
     elif args.command == "init-env":
         init_env(no_prompt=getattr(args, "no_prompt", False))
+    elif args.command == "week1":
+        reset_dagster()
+        reset_dlt()
+        reset_warehouse()
+        reset_source_data()
+        reset_metabase_data()
+        init_env(no_prompt=True)
+        # generate_source_data(argparse.Namespace(global_start_date="2025-02-01", global_end_date="2025-03-20"))
+        # kickoff jobs?
+        # import subprocess
+        # def run_analytics_system_command():
+        #     cmd = [
+        #         "uv",
+        #         "run",
+        #         "dg",
+        #         "launch",
+        #         "--assets",
+        #         "dlt_filesystem_calls_source_calls",
+        #         "--partition-range",
+        #         "2025-01-06...2025-01-12",
+        #     ]
+        #     subprocess.run(cmd, cwd=BASE_DIR / "analytics_system")
+        # run_analytics_system_command()
 
 
 if __name__ == "__main__":
