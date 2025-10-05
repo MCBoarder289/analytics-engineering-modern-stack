@@ -69,9 +69,15 @@ dg dev
 ```
 
 ### Launching assets/pipelines from the dg cli
+For a partition range:
 ```bash
 dg launch --assets dlt_filesystem_calls_source_calls --partition-range 2025-01-01...2025-01-05
 ```
+Or a single partition:
+```bash
+dg launch --assets dlt_filesystem_surveys_source_surveys --partition 2025-02-01
+```
+
 
 Open http://localhost:3000 in your browser to see the project.
 

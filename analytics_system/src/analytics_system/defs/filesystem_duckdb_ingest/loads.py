@@ -22,8 +22,15 @@ def parquet_day_partition(dataset: str, date_partition: str):
     """Helper function to dynamically produce the boilerplate glob access of the raw source files"""
     abs_path = os.path.abspath(os.path.join(SOURCE_DATA_DIR_PATH, f"{dataset}/day={date_partition}/"))
     partition_path = f"file://{abs_path}"
+    # To make the pipeline idempotent, we can add incremental by file_url,
+    # but we **need** to sort by the modification date in case there are multiple files in the directory
+    # Also, this assumes that we run partitions backfilled sequentially in chronological order, otherwise
+    # retroactive backfills will not complete (since the alphabetical file_url cursor state won't permit an earlier one)
+    fs = filesystem(
+        partition_path, file_glob="*.parquet", incremental=dlt.sources.incremental("file_url", row_order="asc")
+    )
     # Need to add the "type: ignore" to the method chaining that dlt supports (piping into read_parquet())
-    return filesystem(partition_path, file_glob="*.parquet") | read_parquet()  # type: ignore
+    return fs | read_parquet()  # type: ignore
 
 
 def date_range_list(start_date: str, end_date: str) -> list[str]:

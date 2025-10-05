@@ -32,8 +32,13 @@
   * When I first run the pipeline, the state doesn't update for both my source and pipeline, just the source. A second run will duplicate, but then it will be idempotent after that.
   * I think I've identified the issue as somehow related to the source decorator and how dagster has to instantiate the source
     * See [dlt slack question](https://dlthub-community.slack.com/archives/C04DQA7JJN6/p1758997014552919?thread_ts=1758995720.987159&cid=C04DQA7JJN6)
-  * RESOLUTION: I ended up needing to name the pipeline name the same thing as the soruce's name/function name. That way, the state that is saved ends up being shared properly.
+  * RESOLUTION: I ended up needing to name the pipeline name the same thing as the source's name/function name. That way, the state that is saved ends up being shared properly.
     * See [dagster slack thread](https://dagster.slack.com/archives/C066HKS7EG1/p1759021949908949?thread_ts=1759019650.736699&cid=C066HKS7EG1)
+  * [SOLUTION]: After upgrading dlt and doing some testing, I realized that the modification date issue was that I write future surveys before surveys that are earlier.
+    * This means that dlt's incremental cursor is "global" and not "per partition" or in my case, "per directory".
+    * To fix this, modification dates could be more realistically create (and would be in real life)
+    * Our naming convention for files is already sequential, and the file url includes the full path. The directories are ordered alphabetically by date, and the files inside are also sequential, so this is safe for our use case.
+    * One caveat here is that because the cursor is global, backfills need to start from the earliest date, and only move forward. We can't retroactively process files for earlier dates in that case.
 
 ## Performance
 * Noticed dagster says runs take at least 1 minute, even if the processing is in sub-second completions.
