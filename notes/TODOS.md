@@ -109,7 +109,7 @@ Here's how the .dbt folder and profiles.yml are created:
       * See "prepare_if_dev" to ensure changes to dbt get refreshed when running dg dev
 
 
-### Data Generation
+## Data Generation
 * Update call volume patterns. Currently, the seasonality and weekday multipliers are being dwarfed by call times and arrivals.
   * Basically, because agents are pretty much fully utilized, the desired call volume of ~3000 calls per day ends up being a third of that due to how long calls are taking, and that we cut things off at the workday end.
   * See "Simulation Customer Overlap fix" conversation in ChatGPT project for more details/context.
@@ -142,3 +142,10 @@ Here's how the .dbt folder and profiles.yml are created:
     # Removing concurrency increased the pipeline time to bout 8.5 minutes for the entire dataset (not great).
     # This requires going into the UI because you can't set that in the dagster.yaml, except for a default for all
     ``` 
+
+## uv stuff
+* Learned to use uvx (or uv tool run) to run commands that use a temporary venv that isn't permanently installed
+  * The following example will remove a file from the entire git history. It will keep force you to rewrite your remotes, but was super useful.
+  * ```bash 
+    uvx --from git-filter-repo git filter-repo --path call_center/profiles.yml.bak --invert-paths --force 
+    ```
