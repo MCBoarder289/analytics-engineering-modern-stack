@@ -422,6 +422,7 @@ def simulate_call_center(
                     if future_day <= simulation_config.global_end_date:
                         other_agents = agents[agents["agent_id"] != agent_id]
                         cb_agent = other_agents.iloc[[rng.integers(0, len(other_agents))]]
+                        # TODO: Sometimes use a different call reason/sub reason?
                         pending_callbacks.append({
                             "day": future_day,
                             "customer_id": customer_id,

@@ -11,6 +11,9 @@
   * [DONE] Make NPS score more relatable (currently basically 0)
 * Test what incremental loading looks like for agent/daily aggregation tables
   * Do I need a unique/composite unique key? Will it work with just the dates?
+* Need to build first call resolution two ways:
+  * Calls within X days for the first call with the same call_reason
+  * Supplement with the "previous_issue_flag"
 
 ## CLI Work
 * Need to hydrate problematic data that will fail certain tests:
@@ -53,6 +56,8 @@
 * need to add instructions on setting up their local profiles.yml
   * Give example of a profiles.yml
   * ensure the databases are in the proper place
+
+* If you want to use codegen to document the models, you need to first run them on the warehouse so that it can infer columns/types/etc.
 
 * **dbt tests**
   * tests can be defined in the tests directory, and they're automatically assigned to the models they reference
