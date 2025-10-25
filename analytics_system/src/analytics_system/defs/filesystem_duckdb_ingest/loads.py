@@ -18,6 +18,8 @@ from analytics_system.constants import (
 
 daily_partitions = DailyPartitionsDefinition(start_date=GLOBAL_START_DATE, end_date=GLOBAL_END_DATE)
 
+dlt.config["normalize.parquet_normalizer.add_dlt_load_id"] = True  # TODO: Figure out why this is needed vs. config.toml
+
 def parquet_day_partition(dataset: str, date_partition: str):
     """Helper function to dynamically produce the boilerplate glob access of the raw source files"""
     abs_path = os.path.abspath(os.path.join(SOURCE_DATA_DIR_PATH, f"{dataset}/day={date_partition}/"))
@@ -30,7 +32,7 @@ def parquet_day_partition(dataset: str, date_partition: str):
         partition_path, file_glob="*.parquet", incremental=dlt.sources.incremental("file_url", row_order="asc")
     )
     # Need to add the "type: ignore" to the method chaining that dlt supports (piping into read_parquet())
-    return fs | read_parquet()  # type: ignore
+    return fs | read_parquet(use_pyarrow=True)  # type: ignore
 
 
 def date_range_list(start_date: str, end_date: str) -> list[str]:
@@ -104,7 +106,7 @@ def calls_ingestion(context: AssetExecutionContext, dlt: DagsterDltResource):
         pipeline_name="filesystem_crm_source",  # Needs to match the dlt.source name to avoid state issues
         pipelines_dir=DLT_STATE_LOCATION_ABS_PATH,
         dataset_name="raw_crm",
-        destination=dlt.destinations.duckdb(INGEST_CRM_ABS_PATH)
+        destination=dlt.destinations.duckdb(INGEST_CRM_ABS_PATH),
     ),
     partitions_def=daily_partitions,
     group_name="raw_ingestion",
