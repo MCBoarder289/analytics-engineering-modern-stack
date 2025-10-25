@@ -1,23 +1,31 @@
 version: 2
 
 models:
-  - name: stg_calls
-    description: "Contains all of the telephony call records and measurements for each call"
+  - name: mart_calls
+    description: "Data mart containing individual telephony records, measurements, and relevant dimensions"
     columns:
       - name: call_id
+        data_type: bigint
         data_tests:
           - unique
           - not_null
-        data_type: bigint
         description: "Unique identifier for the call in the telephony system"
 
       - name: agent_id
         data_type: bigint
         description: "Unique identifier for the agent who handled the call"
 
+      - name: agent_name
+        data_type: varchar
+        description: "Display name for the agent who took the call"
+
       - name: customer_id
         data_type: bigint
         description: "Unique identifier for the customer served on the call"
+
+      - name: customer_program
+        data_type: varchar
+        description: "Specific program subscription for the customer"
 
       - name: queue_hold_time
         data_type: bigint
@@ -47,19 +55,23 @@ models:
         data_type: timestamp with time zone
         description: "Timestamp of when this record was loaded or changed in the data warehouse"
 
-  - name: stg_crm
-    description: "Contains all of the records from the crm records of each call"
+  - name: mart_crm
+    description: "Data mart containing all of the crm records for each call and the relevant dimensions"
     columns:
       - name: crm_id
-        data_type: bigint
-        description: "Unique identifier for the crm record in the crm system"
         data_tests:
           - unique
           - not_null
+        data_type: bigint
+        description: "Unique identifier for the crm record in the crm system"
 
       - name: agent_id
         data_type: bigint
         description: "Unique identifier for the agent who handled the call"
+
+      - name: agent_name
+        data_type: varchar
+        description: "Display name for the agent who took the call"
 
       - name: call_id
         data_type: bigint
@@ -68,6 +80,10 @@ models:
       - name: customer_id
         data_type: bigint
         description: "Unique identifier for the customer served"
+
+      - name: customer_program
+        data_type: varchar
+        description: "Specific program subscription for the customer"
 
       - name: reason_code
         data_type: varchar
@@ -83,20 +99,20 @@ models:
 
       - name: created_ts
         data_type: timestamp with time zone
-        description: "Timestamp when this crm record was created in the crm system"
+        description: ""
 
       - name: warehouse_updated_ts
         data_type: timestamp with time zone
-        description: "Timestamp of when this record was loaded or changed in the data warehouse"
+        description: "Timestamp when this crm record was created in the crm system"
 
-  - name: stg_surveys
-    description: "Contains all of the survey responses from customers"
+  - name: mart_surveys
+    description: "Data mart containing customer survey responses and relevant dimensions"
     columns:
       - name: survey_id
+        data_type: bigint
         data_tests:
           - unique
           - not_null
-        data_type: bigint
         description: "Unique identifier for the survey in the survey system"
 
       - name: call_id
@@ -107,9 +123,17 @@ models:
         data_type: bigint
         description: "Unique identifier for the agent who handled the call"
 
+      - name: agent_name
+        data_type: varchar
+        description: "Display name for the agent who took the call"
+
       - name: customer_id
         data_type: bigint
         description: "Unique identifier for the customer served"
+
+      - name: customer_program
+        data_type: varchar
+        description: "Specific program subscription for the customer"
 
       - name: sent_ts
         data_type: timestamp with time zone
@@ -118,6 +142,10 @@ models:
       - name: response_ts
         data_type: timestamp with time zone
         description: "Timestamp when the survey was received"
+
+      - name: days_to_respond
+        data_type: bigint
+        description: "Calculated number of days the customer took to respond"
 
       - name: csat
         data_type: bigint
@@ -138,6 +166,17 @@ models:
                 values: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
                 quote: false
 
+
+      - name: nps_calc
+        data_type: integer
+        description: "Calculated NPS numerator of whether the response was a promoter/neutral/detractor"
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [-1, 0, 1]
+                quote: false
+
       - name: warehouse_updated_ts
         data_type: timestamp with time zone
         description: "Timestamp of when this record was loaded or changed in the data warehouse"
+
