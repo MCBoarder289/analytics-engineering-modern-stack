@@ -28,10 +28,9 @@ def dbt_seeds(context: dg.AssetExecutionContext, dbt: DbtCliResource):
 def dbt_analytics(context: dg.AssetExecutionContext, dbt: DbtCliResource):
     # Need to have a build command in case there's no partitions called (ex: running asset checks from asset def page)
     if context.has_partition_key_range or context.has_partition_key:
-
         time_window = context.partition_time_window
         dbt_vars = {
-            "start_date":time_window.start.strftime("%Y-%m-%d"),
+            "start_date": time_window.start.strftime("%Y-%m-%d"),
             "end_date": time_window.end.strftime("%Y-%m-%d"),
         }
         cli_args = ["build", "--vars", json.dumps(dbt_vars)]

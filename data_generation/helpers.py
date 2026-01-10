@@ -1,10 +1,10 @@
 import numpy as np
 
 
-def generate_nps(rng: np.random.Generator , transfer: bool, hold_time: int, previous_issue_flag: bool) -> int:
+def generate_nps(rng: np.random.Generator, transfer: bool, hold_time: int, previous_issue_flag: bool) -> int:
     # Base probabilities
     p_promoter = 0.6
-    p_passive  = 0.2
+    p_passive = 0.2
     p_detractor = 0.2
 
     # You can adjust these probs by call quality:
@@ -14,7 +14,7 @@ def generate_nps(rng: np.random.Generator , transfer: bool, hold_time: int, prev
 
     category = rng.choice(
         ["promoter", "passive", "detractor"],
-        p=[p_promoter, p_passive, p_detractor]
+        p=[p_promoter, p_passive, p_detractor],
     )
 
     if category == "promoter":

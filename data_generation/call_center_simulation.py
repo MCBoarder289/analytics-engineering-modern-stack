@@ -39,7 +39,7 @@ class SimulationConfig:
     mean_seconds_between_calls: int = 600
     # Seasonality + weekday scaling
     seasonality_amplitude: float = 0.3  # +/- 30%
-    weekday_multipliers: dict = field(default_factory=lambda:WEEKDAY_MULTIPLIERS.copy())
+    weekday_multipliers: dict = field(default_factory=lambda: WEEKDAY_MULTIPLIERS.copy())
     # Reproducibility
     rng_seed: int = 289
     output_dir: str = "../data"
@@ -121,10 +121,11 @@ class SimulationConfig:
 
         return pd.DataFrame.from_records(manager_records)
 
+
 DEFAULT_CONFIG = SimulationConfig()
 
 
-### Helper function to simulate call reasons
+# Helper function to simulate call reasons
 def get_call_reasons_plus_duration(
     simulation_config: SimulationConfig,
     program_key: str,
@@ -196,14 +197,12 @@ def distribute_agents_to_managers(
 
         # --- Step 3: Add assignment segments ---
         for change_date in change_dates:
-            assignments.append(
-                {
-                    "agent_id": agent["agent_id"],
-                    "manager_id": manager_id,
-                    "effective_start": current_start,
-                    "effective_end": change_date - datetime.timedelta(days=1),
-                }
-            )
+            assignments.append({
+                "agent_id": agent["agent_id"],
+                "manager_id": manager_id,
+                "effective_start": current_start,
+                "effective_end": change_date - datetime.timedelta(days=1),
+            })
 
             # switch manager, exclude current
             other_mgrs = managers["manager_id"].loc[managers["manager_id"] != manager_id].to_numpy()
@@ -212,14 +211,12 @@ def distribute_agents_to_managers(
             current_start = change_date
 
         # final segment until end_date
-        assignments.append(
-            {
-                "agent_id": agent["agent_id"],
-                "manager_id": manager_id,
-                "effective_start": current_start,
-                "effective_end": pd.to_datetime(SENTINEL_END_DATE),
-            }
-        )
+        assignments.append({
+            "agent_id": agent["agent_id"],
+            "manager_id": manager_id,
+            "effective_start": current_start,
+            "effective_end": pd.to_datetime(SENTINEL_END_DATE),
+        })
 
     assignments_df = pd.DataFrame(assignments)
 
@@ -257,7 +254,7 @@ def simulate_call_center(
 ) -> None:
     rng = np.random.default_rng(simulation_config.rng_seed)
 
-    ## Write out customers, managers, and assignments csv files for dbt seed
+    # Write out customers, managers, and assignments csv files for dbt seed
     agents = simulation_config.generate_agents()
     managers = simulation_config.generate_managers()
     customers = simulation_config.generate_customers()
@@ -318,8 +315,12 @@ def simulate_call_center(
                     customer = customers[customers["customer_id"] == customer_id]
                     reason, subreason = item["reason"], item["subreason"]
                     previous_issue_flag = rng.random() < simulation_config.previous_issue_rate
-                    reason, subreason, duration = get_call_reasons_plus_duration(simulation_config=simulation_config,
-                        program_key=customer["program"].item(), rng=rng, reason=reason, subreason=subreason
+                    reason, subreason, duration = get_call_reasons_plus_duration(
+                        simulation_config=simulation_config,
+                        program_key=customer["program"].item(),
+                        rng=rng,
+                        reason=reason,
+                        subreason=subreason,
                     )
 
                 else:  # Select a free customer (fixed attempts)
@@ -327,7 +328,6 @@ def simulate_call_center(
                     customer_id = None
 
                     for _ in range(15):
-
                         customer_idx = rng.integers(0, len(customers))
                         customer = customers.iloc[[customer_idx]]
                         customer_id = customer["customer_id"].item()
@@ -338,11 +338,12 @@ def simulate_call_center(
                     if customer is None:
                         raise RuntimeError(f"No free customer found after 15 attempts at {start_time}")
 
-                    reason, subreason, duration = get_call_reasons_plus_duration( simulation_config=simulation_config,
-                        program_key=customer["program"].item(), rng=rng
+                    reason, subreason, duration = get_call_reasons_plus_duration(
+                        simulation_config=simulation_config,
+                        program_key=customer["program"].item(),
+                        rng=rng,
                     )
                     previous_issue_flag = False
-
 
                 end_ts = start_time + datetime.timedelta(seconds=duration)
                 customer_busy_until[customer_id] = end_ts
@@ -398,7 +399,8 @@ def simulate_call_center(
                         np.clip(
                             rng.normal(4 if not transfer or hold_time_during_call < 60 else 2, 1),
                             a_min=1,
-                            a_max=5)
+                            a_max=5,
+                        )
                     )
                     nps = generate_nps(
                         rng=rng, transfer=transfer, hold_time=hold_time, previous_issue_flag=previous_issue_flag
@@ -463,6 +465,7 @@ def main(**overrides):
 
     print(f"COMPLETE: Simulation took {end_time - start_time} seconds.")
 
+
 if __name__ == "__main__":
     main()
 
@@ -473,6 +476,3 @@ if __name__ == "__main__":
 
 # Snapshots will be harder to implement because they use the actual runtime date to establish to effective dates
 # So I'll need to generate the agent/manager relationship separately.
-
-
-

@@ -9,6 +9,7 @@ from data_generation import call_center_simulation
 
 # NOTE: In Pycharm, mark the tests directory as "Test Sources Root" to make these run from the gutter
 
+
 def test_generate_customers_determinism():
     config = call_center_simulation.SimulationConfig(customers_count=10)
     df1 = config.generate_customers()
@@ -18,6 +19,7 @@ def test_generate_customers_determinism():
     different_seed_df = config.generate_customers(faker_seed=111)
     with pytest.raises(AssertionError):
         pd.testing.assert_frame_equal(df1, different_seed_df)
+
 
 def test_generate_agents_determinism():
     config = call_center_simulation.SimulationConfig(agents_count=10)
@@ -29,6 +31,7 @@ def test_generate_agents_determinism():
     with pytest.raises(AssertionError):
         pd.testing.assert_frame_equal(df1, different_seed_df)
 
+
 def test_generate_managers_determinism():
     config = call_center_simulation.SimulationConfig(managers_count=10)
     df1 = config.generate_managers()
@@ -39,12 +42,13 @@ def test_generate_managers_determinism():
     with pytest.raises(AssertionError):
         pd.testing.assert_frame_equal(df1, different_seed_df)
 
+
 def test_agent_assignments_determinism():
     config = call_center_simulation.SimulationConfig(
         agents_count=10,
         managers_count=10,
     )
-    agents= config.generate_agents()
+    agents = config.generate_agents()
     managers = config.generate_managers()
 
     agent_assignments1 = call_center_simulation.distribute_agents_to_managers(

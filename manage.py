@@ -1,4 +1,3 @@
-
 import argparse
 import datetime
 import shutil
@@ -28,6 +27,7 @@ PROD_WAREHOUSE_PATH = WAREHOUSE_DIR / "warehouse_prod.duckdb"
 METABASE_DATA_PATH = BASE_DIR / "data_vis_metabase" / "pgdata"
 
 DATA_DIR = BASE_DIR / "data"
+
 
 def init_env(no_prompt=False):
     if not ENV_EXAMPLE.exists():
@@ -68,21 +68,27 @@ def init_env(no_prompt=False):
         return
 
     content = PROFILES_YAML_EXAMPLE.read_text()
-    content = content.replace(
-        "/path/to/analytics-engineering-modern-stack/data/warehouse/warehouse_dev.duckdb",
-        str(DEV_WAREHOUSE_PATH.resolve()),
-    ).replace(
-        "/path/to/analytics-engineering-modern-stack/data/warehouse/warehouse_prod.duckdb",
-        str(PROD_WAREHOUSE_PATH.resolve()),
-    ).replace(
-        "/path/to/analytics-engineering-modern-stack/data/warehouse/ingest_calls.duckdb",
-        str(INGEST_CALLS_WAREHOUSE.resolve()),
-    ).replace(
-        "/path/to/analytics-engineering-modern-stack/data/warehouse/ingest_crm.duckdb",
-        str(INGEST_CRM_WAREHOUSE.resolve())
-    ).replace(
-        "/path/to/analytics-engineering-modern-stack/data/warehouse/ingest_surveys.duckdb",
-        str(INGEST_SURVEYS_WAREHOUSE.resolve())
+    content = (
+        content.replace(
+            "/path/to/analytics-engineering-modern-stack/data/warehouse/warehouse_dev.duckdb",
+            str(DEV_WAREHOUSE_PATH.resolve()),
+        )
+        .replace(
+            "/path/to/analytics-engineering-modern-stack/data/warehouse/warehouse_prod.duckdb",
+            str(PROD_WAREHOUSE_PATH.resolve()),
+        )
+        .replace(
+            "/path/to/analytics-engineering-modern-stack/data/warehouse/ingest_calls.duckdb",
+            str(INGEST_CALLS_WAREHOUSE.resolve()),
+        )
+        .replace(
+            "/path/to/analytics-engineering-modern-stack/data/warehouse/ingest_crm.duckdb",
+            str(INGEST_CRM_WAREHOUSE.resolve()),
+        )
+        .replace(
+            "/path/to/analytics-engineering-modern-stack/data/warehouse/ingest_surveys.duckdb",
+            str(INGEST_SURVEYS_WAREHOUSE.resolve()),
+        )
     )
 
     if PROFILES_YAML_FILE.exists() and not no_prompt:
@@ -114,6 +120,7 @@ def _confirm_and_delete(path: Path, preserve=None):
 
     print(f"COMPLETED: Cleaned {path}")
 
+
 def _resolve_path(p: str | Path) -> Path:
     """Resolve relative paths to be repo-root relative (next to manage.py)."""
     p = Path(p)
@@ -134,6 +141,7 @@ def reset_warehouse():
     """Reset DuckDB warehouse state."""
     _confirm_and_delete(WAREHOUSE_DIR)
 
+
 def reset_source_data():
     """Reset source data."""
     _confirm_and_delete(DATA_DIR, preserve=["warehouse"])
@@ -142,6 +150,7 @@ def reset_source_data():
 def reset_metabase_data():
     """Reset metabase data."""
     _confirm_and_delete(METABASE_DATA_PATH)
+
 
 def generate_source_data(args):
     """
@@ -162,9 +171,7 @@ def generate_source_data(args):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Manage and reset project state (Dagster, dlt, warehouse)."
-    )
+    parser = argparse.ArgumentParser(description="Manage and reset project state (Dagster, dlt, warehouse).")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     simulate_parser = subparsers.add_parser(
@@ -182,7 +189,7 @@ def main():
     reset_parser.add_argument(
         "targets",
         nargs="+",
-        choices=["dagster", "dlt", "warehouse", "source-data", "metabase",  "all"],
+        choices=["dagster", "dlt", "warehouse", "source-data", "metabase", "all"],
         help="Which components to reset",
     )
 
@@ -204,7 +211,7 @@ def main():
                     "dlt": reset_dlt,
                     "warehouse": reset_warehouse,
                     "source-data": reset_source_data,
-                    "metabase": reset_metabase_data
+                    "metabase": reset_metabase_data,
                 }[target]()
     elif args.command == "generate-source-data":
         generate_source_data(args)

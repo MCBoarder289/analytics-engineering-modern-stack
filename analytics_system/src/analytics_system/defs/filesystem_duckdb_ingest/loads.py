@@ -20,6 +20,7 @@ daily_partitions = DailyPartitionsDefinition(start_date=GLOBAL_START_DATE, end_d
 
 dlt.config["normalize.parquet_normalizer.add_dlt_load_id"] = True  # TODO: Figure out why this is needed vs. config.toml
 
+
 def parquet_day_partition(dataset: str, date_partition: str):
     """Helper function to dynamically produce the boilerplate glob access of the raw source files"""
     abs_path = os.path.abspath(os.path.join(SOURCE_DATA_DIR_PATH, f"{dataset}/day={date_partition}/"))
@@ -40,6 +41,7 @@ def date_range_list(start_date: str, end_date: str) -> list[str]:
     end = datetime.strptime(end_date, "%Y-%m-%d")
     delta = (end - start).days
     return [(start + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(delta + 1)]
+
 
 @dlt.source
 def filesystem_calls_source(date_partition: str | list[str] | None = None):
@@ -65,6 +67,7 @@ def filesystem_crm_source(date_partition: str | list[str] | None = None):
                 yield from parquet_day_partition(dataset="crm", date_partition=date)
 
     return crm
+
 
 @dlt.source
 def filesystem_surveys_source(date_partition: str | list[str] | None = None):
