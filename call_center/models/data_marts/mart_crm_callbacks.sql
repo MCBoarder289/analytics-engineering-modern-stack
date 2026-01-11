@@ -29,5 +29,7 @@ inner join {{ ref('mart_crm') }} crm2
 {% if is_incremental() %}
 where crm2.created_ts >= '{{ var("start_date") }}'
   and crm2.created_ts < '{{ var("end_date") }}'
+  {# Adding a timebox for crm1 to make backfills more efficient - not scanning the entire crm table to join to #}
+  and cast(crm1.created_ts as date) >= CAST('{{ var("start_date") }}' AS DATE) - INTERVAL '{{ var("lookback_days", 7) }} day'
 {% endif %}
 
