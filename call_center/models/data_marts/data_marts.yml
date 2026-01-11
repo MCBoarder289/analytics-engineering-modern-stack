@@ -103,7 +103,58 @@ models:
 
       - name: warehouse_updated_ts
         data_type: timestamp with time zone
-        description: "Timestamp when this crm record was created in the crm system"
+        description: "Timestamp of when this record was loaded or changed in the data warehouse"
+
+  - name: mart_crm_callbacks
+    description: "Data mart containing all of the callback records for each crm record and the relevant dimensions for computing first call resolution"
+    columns:
+      - name: original_crm_id
+        data_type: bigint
+        description: "Unique identifier for the original crm record in the crm system for the callback"
+
+      - name: callback_crm_id
+        data_type: bigint
+        description: "Unique identifier for the callback crm record in the crm system relating to the original crm record"
+
+      - name: original_agent_id
+        data_type: varchar
+        description: "Agent ID that handled the original call"
+
+      - name: callback_agent_id
+        data_type: varchar
+        description: "Agent ID that handled the callback"
+
+      - name: customer_id
+        data_type: bigint
+        description: "Unique identifier for the customer served"
+
+      - name: original_created_ts
+        data_type: timestamp with time zone
+        description: "Timestamp of the original call"
+
+      - name: callback_created_ts
+        data_type: timestamp with time zone
+        description: "Timestamp of the callback"
+
+      - name: days_between
+        data_type: int
+        description: "Number of days between the original call and the callback"
+      
+      - name: same_reason_flag
+        data_type: boolean
+        description: "Flag whether the callback had the same reason code as the original call"
+
+      - name: same_sub_reason_flag
+        data_type: boolean
+        description: "Flag whether the callabck had the same sub reason code as the original call"
+
+      - name: callback_previous_issue_flag
+        data_type: boolean
+        description: "Agent input as to whether this callback was about a previous issue"
+
+      - name: warehouse_updated_ts
+        data_type: timestamp with time zone
+        description: "Timestamp of when this record was loaded or changed in the data warehouse"
 
   - name: mart_surveys
     description: "Data mart containing customer survey responses and relevant dimensions"
