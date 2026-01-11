@@ -111,10 +111,21 @@ models:
       - name: original_crm_id
         data_type: bigint
         description: "Unique identifier for the original crm record in the crm system for the callback"
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('mart_crm')
+              field: crm_id
+        
 
       - name: callback_crm_id
         data_type: bigint
         description: "Unique identifier for the callback crm record in the crm system relating to the original crm record"
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('mart_crm')
+              field: crm_id
 
       - name: original_agent_id
         data_type: varchar
@@ -143,18 +154,36 @@ models:
       - name: same_reason_flag
         data_type: boolean
         description: "Flag whether the callback had the same reason code as the original call"
+        data_tests:
+          - not_null
 
       - name: same_sub_reason_flag
         data_type: boolean
         description: "Flag whether the callabck had the same sub reason code as the original call"
+        data_tests:
+          - not_null
 
       - name: callback_previous_issue_flag
         data_type: boolean
         description: "Agent input as to whether this callback was about a previous issue"
+        data_tests:
+          - not_null
 
       - name: warehouse_updated_ts
         data_type: timestamp with time zone
         description: "Timestamp of when this record was loaded or changed in the data warehouse"
+
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - original_crm_id
+            - callback_crm_id
+
+      - dbt_utils.expression_is_true:
+          expression: "original_crm_id <> callback_crm_id"
+
+      - dbt_utils.expression_is_true:
+          expression: "callback_created_ts > original_created_ts"
 
   - name: mart_surveys
     description: "Data mart containing customer survey responses and relevant dimensions"
