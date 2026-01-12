@@ -185,6 +185,33 @@ models:
       - dbt_utils.expression_is_true:
           expression: "callback_created_ts > original_created_ts"
 
+  - name: mart_first_call_resolution
+    description: ""
+    columns:
+      - name: crm_id
+        data_type: bigint
+        description: "Unique identifier for the originating call's crm record"
+
+      - name: agent_id
+        data_type: bigint
+        description: "Unique identifier for the agent that handled the call"
+
+      - name: agent_name
+        data_type: varchar
+        description: "Name of the agent that handled the call"
+
+      - name: fcr_date
+        data_type: date
+        description: "Date that the call took place"
+
+      - name: fcr_denom
+        data_type: integer
+        description: "Numerical representation of the opportunity for a first call resolution"
+
+      - name: fcr_num
+        data_type: integer
+        description: "Numerical representation on whether or not the call passed first call resolution (1 is pass, 0 is fail)"
+
   - name: mart_surveys
     description: "Data mart containing customer survey responses and relevant dimensions"
     columns:

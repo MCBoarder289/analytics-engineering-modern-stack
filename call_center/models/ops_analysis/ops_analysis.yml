@@ -1,0 +1,120 @@
+version: 2
+
+models:
+  - name: daily_agent_call_metrics
+    description: ""
+    columns:
+      - name: agent_id
+        data_type: bigint
+        description: ""
+
+      - name: agent_name
+        data_type: varchar
+        description: ""
+
+      - name: call_date
+        data_type: date
+        description: ""
+
+      - name: duration_sum
+        data_type: hugeint
+        description: ""
+
+      - name: agent_hold_time_sum
+        data_type: hugeint
+        description: ""
+
+      - name: transfer_sum
+        data_type: hugeint
+        description: ""
+
+      - name: call_count
+        data_type: bigint
+        description: ""
+
+      - name: manager_id
+        data_type: integer
+        description: ""
+
+      - name: manager_name
+        data_type: varchar
+        description: ""
+
+      - name: warehouse_updated_ts
+        data_type: timestamp with time zone
+        description: ""
+
+  - name: daily_agent_crm_metrics
+    description: ""
+    columns:
+      - name: agent_id
+        data_type: bigint
+        description: ""
+
+      - name: agent_name
+        data_type: varchar
+        description: ""
+
+      - name: call_date
+        data_type: date
+        description: ""
+
+      - name: fcr_sum
+        data_type: hugeint
+        description: ""
+
+      - name: fcr_denom
+        data_type: hugeint
+        description: ""
+
+      - name: manager_id
+        data_type: integer
+        description: ""
+
+      - name: manager_name
+        data_type: varchar
+        description: ""
+
+      - name: warehouse_updated_ts
+        data_type: timestamp with time zone
+        description: ""
+
+  - name: daily_agent_survey_metrics
+    description: ""
+    columns:
+      - name: agent_id
+        data_type: bigint
+        description: ""
+
+      - name: agent_name
+        data_type: varchar
+        description: ""
+
+      - name: survey_date
+        data_type: date
+        description: ""
+
+      - name: csat_sum
+        data_type: hugeint
+        description: ""
+
+      - name: nps_calc_sum
+        data_type: hugeint
+        description: ""
+
+      - name: survey_count
+        data_type: bigint
+        description: ""
+
+      - name: manager_id
+        data_type: integer
+        description: ""
+
+      - name: manager_name
+        data_type: varchar
+        description: ""
+
+      - name: warehouse_updated_ts
+        data_type: timestamp with time zone
+        description: ""
+
