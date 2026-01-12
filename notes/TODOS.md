@@ -139,7 +139,7 @@ Here's how the .dbt folder and profiles.yml are created:
     # In the end, it was about ~30 something partitions that were completed per data source, so likely that's some limit
     # given my machine.
     #
-    # I was able to re-run the failed paritions, and all but one failed, but that certainly caused dupes in the source data
+    # I was able to re-run the failed partitions, and all but one failed, but that certainly caused dupes in the source data
     # It was nice to know that dagster pretty gracefully only ran jobs for failed partitions within each source, which in
     # theory should not have produced dupes from the source, but I bet some of the partition ranges overlapped or something?
     
@@ -150,7 +150,33 @@ Here's how the .dbt folder and profiles.yml are created:
 
 ## uv stuff
 * Learned to use uvx (or uv tool run) to run commands that use a temporary venv that isn't permanently installed
-  * The following example will remove a file from the entire git history. It will keep force you to rewrite your remotes, but was super useful.
+  * The following example will remove a file from the entire git history. It will force you to rewrite your remotes, but was super useful.
   * ```bash 
     uvx --from git-filter-repo git filter-repo --path call_center/profiles.yml.bak --invert-paths --force 
     ```
+
+
+## Other Internal Notes
+### Initial data setup
+
+The data_generation directory contains the code that will generate data for the project.
+It contains logic that can be tweaked to produce different datasets.
+
+Currently, everything is keyed off of the "call date", but the surveys are intentionally keyed off of the survey's response date.
+This is to emulate late-arriving data realistically.
+
+### Sequence of project development
+After setting up the primary data model, the next steps will follow the DAG linearly:
+* ELT jobs to ingest the source data
+  * Since [dlt](https://dlthub.com/docs/intro) will be used, going to introduce a [Dagster](https://docs.dagster.io/) project scaffolding
+* Transformational layer
+  * [dbt](https://docs.getdbt.com/docs/introduction) will be used for this, so we will scaffold a dbt project after working through the ELT jobs.
+* BI/Visualization layer
+* Operationalization work
+  * Buttoning up the repo for spinning up the entire system
+    * Data setup
+    * Running core platform/jobs
+    * Cleanup/reset of state
+  * Injecting scenarios to work around:
+    * Duplicate data
+    * Errors, etc.
