@@ -12,7 +12,7 @@ with surveys as (
     from {{ ref('mart_surveys') }}
     {% if is_incremental() %}
     {# Need to implement a lookback period for late-arriving surveys on ingestion date #}
-      where cast(sent_ts as date) between date_add('day', -{{ var('lookback_days', 7) }}, '{{ var("start_date") }}') and '{{ var("end_date") }}'
+      where cast(sent_ts as date) between CAST('{{ var("start_date") }}' AS DATE) - INTERVAL '{{ var("lookback_days", 7) }} day' and CAST('{{ var("end_date") }}' AS DATE)
     {% endif %}
 ),
 
