@@ -5,12 +5,12 @@ description = "Monorepo for examples of analytics engineering in the modern data
 readme = "README.md"
 requires-python = "==3.13.5"
 dependencies = [
-    "dbt-core>=1.10.11",
-    "dbt-duckdb>=1.9.6",
-    "faker>=37.6.0",
+    "dbt-core==1.10.11",
+    "dbt-duckdb==1.9.6",
+    "faker==37.6.0",
     "numpy==2.3.3",
     "pandas==2.3.2",
-    "pyarrow>=21.0.0",
+    "pyarrow==21.0.0",
 ]
 
 [dependency-groups]
