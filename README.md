@@ -37,7 +37,7 @@ uv run python manage.py generate-source-data
 
 ### Setting up Dagster
 You need to make your Dagster environment persistent so that when you run assets/pipelines, those states are saved.
-To do this, you need to copy the `.env.example` file to a `.env` files and update the path to be the specific location.
+To do this, you need to copy the `.env.example` file to a `.env` file and update the path to be the specific location.
 
 There is a helper function to do this for you:
 ```bash
