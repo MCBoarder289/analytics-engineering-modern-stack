@@ -1,5 +1,6 @@
 import calendar
 import datetime
+import logging
 import os
 import random
 from dataclasses import dataclass, field, replace
@@ -17,6 +18,14 @@ from data_generation.constants import (
     WEEKDAY_MULTIPLIERS,
 )
 from data_generation.helpers import generate_nps
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -264,9 +273,13 @@ def simulate_call_center(
         start_date=simulation_config.global_start_date,
         end_date=simulation_config.global_end_date,
     )
+    logger.info("Writing out agents seed csv")
     agents.to_csv(f"{seed_output_dir}/agents.csv", index=False, header=True)
+    logger.info("Writing out managers seed csv")
     managers.to_csv(f"{seed_output_dir}/managers.csv", index=False, header=True)
+    logger.info("Writing out customers seed csv")
     customers.to_csv(f"{seed_output_dir}/customers.csv", index=False, header=True)
+    logger.info("Writing out agent_assignments seed csv")
     agent_assignments.to_csv(f"{seed_output_dir}/agent_assignments.csv", index=False, header=True)
 
     call_id_counter, crm_id_counter, survey_id_counter = 0, 0, 0
@@ -278,10 +291,10 @@ def simulate_call_center(
     }
 
     for day in pd.date_range(simulation_config.global_start_date, simulation_config.global_end_date):
-        print(f"Simulation start for day: {day.date()}")
-        print(f"calls: {call_id_counter}")
-        print(f"crm: {crm_id_counter}")
-        print(f"survey: {survey_id_counter}")
+        logger.info(f"Simulation start for day: {day.date()}")
+        logger.info(f"calls: {call_id_counter}")
+        logger.info(f"crm: {crm_id_counter}")
+        logger.info(f"survey: {survey_id_counter}")
         day_date = day.date()
         day_in_month = day_date.day
         days_in_month = calendar.monthrange(day_date.year, day_date.month)[1]
@@ -463,7 +476,7 @@ def main(**overrides):
     simulate_call_center(**sim_kwargs)
     end_time = datetime.datetime.now()
 
-    print(f"COMPLETE: Simulation took {end_time - start_time} seconds.")
+    logger.info(f"COMPLETE: Simulation took {end_time - start_time} seconds.")
 
 
 if __name__ == "__main__":

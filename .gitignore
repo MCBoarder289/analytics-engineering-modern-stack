@@ -25,3 +25,5 @@ data/
 
 # dbt created logs
 logs/
+
+warehouse-startup.sql

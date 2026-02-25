@@ -7,6 +7,7 @@ The following sections will describe how to get this running locally in your env
 ### Prerequisites:
 1. Install [uv](https://docs.astral.sh/uv/getting-started/installation/) to manage the various virtual environments, python versions, and dependencies
 2. Install [docker](https://docs.docker.com/desktop/) to manage the containers (mainly for metabase and its backing postgres db)
+3. [Optional, but encouraged] Install [DuckDB](https://duckdb.org/install/) CLI so that you can easily explore the data (or you can use your preferred SQL IDE) 
 
 ### Installing Virtual Environments
 There are two virtual environments that need to be set up.
@@ -62,6 +63,17 @@ uv run dg dev
 ```
 
 Then open your browser to the url in the log that shows `Serving dagster-webserver on http://<your local host>:<port>` and you should see the Dagster UI.
+
+### Exploring your warehouse
+Once you've run the various pipelines that build out the data warehouse, you can explore the data with your favorite SQL IDE.
+
+The DuckDB UI is quite nice, so the init-env script you ran generated some helpful startup SQL to combine each of the database files (ingestion for each source, as well as the combined warehouse).
+
+The following command will bring up DuckDB's UI in your browser with everything in one place:
+
+```bash
+duckdb -ui -init scripts/warehouse-startup.sql
+```
 
 ### Running Metabase
 Once you have built your data warehouse via Dagster, you can run metabase as a container using docker.

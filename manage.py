@@ -1,11 +1,20 @@
 import argparse
 import datetime
+import logging
 import shutil
 from pathlib import Path
 
 import duckdb
 
 from data_generation.call_center_simulation import main as run_simulation
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+
+logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).parent.resolve()
 DAGSTER_HOME = BASE_DIR / "analytics_system" / ".dagster_home"
@@ -28,10 +37,14 @@ METABASE_DATA_PATH = BASE_DIR / "data_vis_metabase" / "pgdata"
 
 DATA_DIR = BASE_DIR / "data"
 
+SCRIPTS_DIR = BASE_DIR / "scripts"
+WAREHOUSE_STARTUP_TEMPLATE_FILE = SCRIPTS_DIR / "warehouse-startup-template.sql"
+WAREHOUSE_STARTUP_SCRIPT = SCRIPTS_DIR / "warehouse-startup.sql"
+
 
 def init_env(no_prompt=False):
     if not ENV_EXAMPLE.exists():
-        print(f"{ENV_EXAMPLE} does not exist. Cannot create .env.")
+        logger.info(f"{ENV_EXAMPLE} does not exist. Cannot create .env.")
         return
 
     # Read the example file
@@ -44,13 +57,13 @@ def init_env(no_prompt=False):
     if ENV_FILE.exists() and not no_prompt:
         confirm = input(f"{ENV_FILE} already exists. Overwrite? [y/N]: ").strip().lower()
         if confirm != "y":
-            print("Aborting .env creation.")
+            logger.info("Aborting .env creation.")
             return
 
     ENV_FILE.write_text(content)
-    print(f"Created {ENV_FILE} with DAGSTER_HOME={DAGSTER_HOME.resolve()}")
+    logger.info(f"Created {ENV_FILE} with DAGSTER_HOME={DAGSTER_HOME.resolve()}")
 
-    print("Creating duckdb warehouse placeholders...")
+    logger.info("Creating duckdb warehouse placeholders...")
 
     for location in [
         INGEST_CALLS_WAREHOUSE,
@@ -61,10 +74,40 @@ def init_env(no_prompt=False):
     ]:
         con = duckdb.connect(database=str(location))
         con.close()
-        print(f"Created {location}")
+        logger.info(f"Created {location}")
+
+    logger.info("Generating duckdb warehouse startup script...")
+
+    content = WAREHOUSE_STARTUP_TEMPLATE_FILE.read_text()
+    content = (
+        content.replace(
+            "/path/to/analytics-engineering-modern-stack/data/warehouse/warehouse_dev.duckdb",
+            str(DEV_WAREHOUSE_PATH.resolve()),
+        )
+        .replace(
+            "/path/to/analytics-engineering-modern-stack/data/warehouse/warehouse_prod.duckdb",
+            str(PROD_WAREHOUSE_PATH.resolve()),
+        )
+        .replace(
+            "/path/to/analytics-engineering-modern-stack/data/warehouse/ingest_calls.duckdb",
+            str(INGEST_CALLS_WAREHOUSE.resolve()),
+        )
+        .replace(
+            "/path/to/analytics-engineering-modern-stack/data/warehouse/ingest_crm.duckdb",
+            str(INGEST_CRM_WAREHOUSE.resolve()),
+        )
+        .replace(
+            "/path/to/analytics-engineering-modern-stack/data/warehouse/ingest_surveys.duckdb",
+            str(INGEST_SURVEYS_WAREHOUSE.resolve()),
+        )
+    )
+
+    WAREHOUSE_STARTUP_SCRIPT.write_text(content)
+
+    logger.info(f"Created {WAREHOUSE_STARTUP_SCRIPT} with local warehouses.")
 
     if not PROFILES_YAML_EXAMPLE.exists():
-        print(f"{PROFILES_YAML_EXAMPLE} does not exist. Cannot create profiles.yml.")
+        logger.error(f"{PROFILES_YAML_EXAMPLE} does not exist. Cannot create profiles.yml.")
         return
 
     content = PROFILES_YAML_EXAMPLE.read_text()
@@ -94,18 +137,18 @@ def init_env(no_prompt=False):
     if PROFILES_YAML_FILE.exists() and not no_prompt:
         confirm = input(f"{PROFILES_YAML_FILE} already exists. Overwrite? [y/N]: ").strip().lower()
         if confirm != "y":
-            print("Aborting profiles.yml creation.")
+            logger.info("Aborting profiles.yml creation.")
             return
 
     PROFILES_YAML_FILE.write_text(content)
-    print(f"Created {PROFILES_YAML_FILE} with local warehouses.")
+    logger.info(f"Created {PROFILES_YAML_FILE} with local warehouses.")
 
 
 def _confirm_and_delete(path: Path, preserve=None):
     if preserve is None:
         preserve = []
     if not path.exists():
-        print(f"SKIPPING: {path} does not exist")
+        logger.info(f"SKIPPING: {path} does not exist")
         return
     for item in path.iterdir():
         if item.name in preserve:
@@ -116,9 +159,9 @@ def _confirm_and_delete(path: Path, preserve=None):
             item.unlink()
 
     for item in preserve:
-        print(f"PRESERVED: {path / item}")
+        logger.info(f"PRESERVED: {path / item}")
 
-    print(f"COMPLETED: Cleaned {path}")
+    logger.info(f"COMPLETED: Cleaned {path}")
 
 
 def _resolve_path(p: str | Path) -> Path:
