@@ -80,7 +80,8 @@ def init_env(no_prompt=False):
 
     content = WAREHOUSE_STARTUP_TEMPLATE_FILE.read_text()
     content = (
-        content.replace(
+        content
+        .replace(
             "/path/to/analytics-engineering-modern-stack/data/warehouse/warehouse_dev.duckdb",
             str(DEV_WAREHOUSE_PATH.resolve()),
         )
@@ -112,7 +113,8 @@ def init_env(no_prompt=False):
 
     content = PROFILES_YAML_EXAMPLE.read_text()
     content = (
-        content.replace(
+        content
+        .replace(
             "/path/to/analytics-engineering-modern-stack/data/warehouse/warehouse_dev.duckdb",
             str(DEV_WAREHOUSE_PATH.resolve()),
         )
