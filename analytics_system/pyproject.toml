@@ -6,7 +6,7 @@ dependencies = [
     "dagster==1.12.15",
     "dagster-dbt==0.28.15",
     "dagster-dlt==0.28.15",
-    "dbt-duckdb==1.9.6",
+    "dbt-duckdb==1.10.1",
     "dlt[duckdb]==1.17.1",
     "pyarrow==21.0.0",
 ]
