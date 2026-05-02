@@ -114,8 +114,9 @@ models:
         data_tests:
           - not_null
           - relationships:
-              to: ref('mart_crm')
-              field: crm_id
+              arguments:
+                to: ref('mart_crm')
+                field: crm_id
         
 
       - name: callback_crm_id
@@ -124,8 +125,9 @@ models:
         data_tests:
           - not_null
           - relationships:
-              to: ref('mart_crm')
-              field: crm_id
+              arguments:
+                to: ref('mart_crm')
+                field: crm_id
 
       - name: original_agent_id
         data_type: varchar
@@ -175,15 +177,18 @@ models:
 
     tests:
       - dbt_utils.unique_combination_of_columns:
-          combination_of_columns:
-            - original_crm_id
-            - callback_crm_id
+          arguments:
+            combination_of_columns:
+              - original_crm_id
+              - callback_crm_id
 
       - dbt_utils.expression_is_true:
-          expression: "original_crm_id <> callback_crm_id"
+          arguments:
+            expression: "original_crm_id <> callback_crm_id"
 
       - dbt_utils.expression_is_true:
-          expression: "callback_created_ts > original_created_ts"
+          arguments:
+            expression: "callback_created_ts > original_created_ts"
 
   - name: mart_first_call_resolution
     description: ""

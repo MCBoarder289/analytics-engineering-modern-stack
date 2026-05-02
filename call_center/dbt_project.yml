@@ -43,6 +43,9 @@ models:
 
 seeds:
   call_center:
+    +meta:
+      dagster:
+        group: seed_data
 
 flags:
   send_anonymous_usage_stats: false
