@@ -1,7 +1,7 @@
 version: 2
 
 models:
-  - name: daily_agent_call_metrics
+  - name: daily_agent_call_metrics_source
     description: ""
     columns:
       - name: agent_id
@@ -44,7 +44,7 @@ models:
         data_type: timestamp with time zone
         description: ""
 
-  - name: daily_agent_crm_metrics
+  - name: daily_agent_crm_metrics_source
     description: ""
     columns:
       - name: agent_id
@@ -79,7 +79,7 @@ models:
         data_type: timestamp with time zone
         description: ""
 
-  - name: daily_agent_survey_metrics
+  - name: daily_agent_survey_metrics_source
     description: ""
     columns:
       - name: agent_id
