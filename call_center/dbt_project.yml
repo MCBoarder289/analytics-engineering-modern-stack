@@ -34,15 +34,20 @@ models:
     sources:
     staging:
       +group: staging_data
+      +schema: staging
     seed_views:
       +group: seed_data
+      +schema: ref
     data_marts:
       +group: data_marts
+      +schema: mart
     ops_analysis:
       +group: ops_analysis
+      +schema: core
 
 seeds:
   call_center:
+    +schema: ref
     +meta:
       dagster:
         group: seed_data
