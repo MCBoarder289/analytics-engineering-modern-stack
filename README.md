@@ -138,6 +138,7 @@ uv run python manage.py reset all
 ```
 .
 ├── analytics_system
+├── assignments
 ├── call_center
 ├── data
 ├── data_generation
@@ -168,3 +169,89 @@ The postgres database that backs the Metabase instance's state will also live he
 
 ### notes
 This is just where internal notes, presentations, and any other miscellaneous items are stored.
+
+---
+
+## Course Assignments
+
+This repository includes hands-on assignments for each module of the course. Assignments work by
+temporarily replacing live source files with **stub versions** that have `TODO` gaps for students
+to fill in. The original finished code is always available as an answer key.
+
+### Assignment structure
+
+Each assignment lives under `assignments/moduleN/`:
+
+```
+assignments/
+  module5/
+    README.md          ← assignment instructions and written-response prompts
+    stubs/             ← stub files installed over the live project when the assignment is set up
+    answers/           ← finished answer key (current state of the live files)
+  module6/
+    ...
+  module8/
+    ...
+```
+
+| Module | Topic | Files targeted |
+|--------|-------|---------------|
+| 5 | dbt Core — staging models & deduplication | `stg_calls.sql`, `stg_crm.sql`, `stg_surveys.sql` |
+| 6 | dbt Advanced — NPS calc & FCR evolution | `mart_surveys.sql`, `mart_first_call_resolution.sql` |
+| 8 | Medallion Architecture — gold-layer aggregations | `daily_agent_metrics.sql`, `monthly_agent_metrics.sql`, and three more ops_analysis models |
+
+### Prerequisites
+
+Before running any assignment, make sure you have completed the standard setup:
+
+```bash
+uv run python manage.py generate-source-data
+uv run python manage.py init-env
+```
+
+### Student workflow
+
+**1. Install the assignment stubs**
+
+```bash
+uv run python manage.py assignment --module 5
+```
+
+This replaces the relevant live files with stub versions, injects any assignment-specific test
+data (Module 5 injects duplicate parquet files to trigger deduplication failures), and prompts
+you to reset pipeline state so you start fresh. You can skip the reset prompt with `--no-reset`.
+
+**2. Read the assignment README**
+
+Each module's `assignments/moduleN/README.md` contains the full assignment instructions,
+business context, and written-response questions.
+
+**3. Fill in the TODOs and verify in Dagster**
+
+Edit the stubbed files, run the pipeline in Dagster, and verify that the dbt asset checks pass.
+
+**4. Restore the answer key (when you're done, or if you get stuck)**
+
+```bash
+uv run python manage.py assignment --module 5 --restore
+```
+
+This copies the finished answer key files back over your working files. You can also browse the
+answers directly at `assignments/module5/answers/` without overwriting your work.
+
+### Instructor commands
+
+**Sync answer keys after updating a live model:**
+
+```bash
+uv run python manage.py sync-answers
+```
+
+Run this any time you update one of the live model files so the `answers/` directories stay in
+sync with the finished code.
+
+**Remove duplicate parquet files after Module 5:**
+
+```bash
+uv run python manage.py cleanup-dupes
+```
