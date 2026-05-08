@@ -41,6 +41,29 @@ SCRIPTS_DIR = BASE_DIR / "scripts"
 WAREHOUSE_STARTUP_TEMPLATE_FILE = SCRIPTS_DIR / "warehouse-startup-template.sql"
 WAREHOUSE_STARTUP_SCRIPT = SCRIPTS_DIR / "warehouse-startup.sql"
 
+ASSIGNMENTS_DIR = BASE_DIR / "assignments"
+
+# Maps each module number to its live file paths (relative to BASE_DIR).
+# These are the files that get replaced by stubs and restored from answers.
+ASSIGNMENT_FILES: dict[int, list[str]] = {
+    5: [
+        "call_center/models/staging/stg_calls.sql",
+        "call_center/models/staging/stg_crm.sql",
+        "call_center/models/staging/stg_surveys.sql",
+    ],
+    6: [
+        "call_center/models/data_marts/mart_surveys.sql",
+        "call_center/models/data_marts/mart_first_call_resolution.sql",
+    ],
+    8: [
+        "call_center/models/ops_analysis/daily_agent_metrics.sql",
+        "call_center/models/ops_analysis/monthly_agent_metrics.sql",
+        "call_center/models/ops_analysis/daily_agent_manager_metrics.sql",
+        "call_center/models/ops_analysis/monthly_agent_manger_metrics.sql",
+        "call_center/models/ops_analysis/monthly_manager_metrics.sql",
+    ],
+}
+
 
 def init_env(no_prompt=False):
     if not ENV_EXAMPLE.exists():
@@ -215,6 +238,138 @@ def generate_source_data(args):
     run_simulation(**overrides)
 
 
+def inject_duplicate_parquets(num_days: int = 3) -> None:
+    """Copies source parquet files under new names to simulate a dlt re-ingestion event.
+
+    dlt tracks ingested files via a ``file_url`` cursor. Copying a file under a new name
+    causes dlt to treat it as a previously unseen file and re-ingest its rows, creating
+    duplicates in the raw DuckDB tables. Students observe the resulting unique-test failures
+    in the mart layer and fix them by implementing the deduplication CTE in staging.
+    """
+    for dataset in ("calls", "crm", "surveys"):
+        dataset_dir = DATA_DIR / dataset
+        if not dataset_dir.exists():
+            logger.warning(f"Dataset directory {dataset_dir} does not exist — skipping.")
+            continue
+
+        day_dirs = sorted(d for d in dataset_dir.iterdir() if d.is_dir() and d.name.startswith("day="))
+        for day_dir in day_dirs[:num_days]:
+            originals = [f for f in day_dir.glob("*.parquet") if "_dup" not in f.stem]
+            for src in originals:
+                dst = day_dir / (src.stem + "_dup" + src.suffix)
+                if not dst.exists():
+                    shutil.copy2(src, dst)
+                    logger.info(f"Created duplicate: {dst.relative_to(BASE_DIR)}")
+                else:
+                    logger.info(f"Duplicate already exists (skipping): {dst.relative_to(BASE_DIR)}")
+
+
+def cleanup_duplicate_parquets() -> None:
+    """Removes all duplicate parquet files created by inject_duplicate_parquets.
+
+    Useful for resetting the source data directory back to a clean state after
+    completing the Module 5 deduplication exercise.
+    """
+    removed = 0
+    for dataset in ("calls", "crm", "surveys"):
+        dataset_dir = DATA_DIR / dataset
+        if not dataset_dir.exists():
+            continue
+        for dup_file in dataset_dir.rglob("*_dup.parquet"):
+            dup_file.unlink()
+            logger.info(f"Removed duplicate: {dup_file.relative_to(BASE_DIR)}")
+            removed += 1
+    if removed == 0:
+        logger.info("No duplicate parquet files found.")
+    else:
+        logger.info(f"Removed {removed} duplicate parquet file(s).")
+
+
+def sync_answers() -> None:
+    """Copies the current live model files into each module's answers/ directory.
+
+    Run this after editing any live model file to keep the assignment answer keys in sync:
+        python manage.py sync-answers
+    """
+    for module_num, file_paths in ASSIGNMENT_FILES.items():
+        for rel_path in file_paths:
+            src = BASE_DIR / rel_path
+            dst = ASSIGNMENTS_DIR / f"module{module_num}" / "answers" / rel_path
+            if not src.exists():
+                logger.warning(f"Source file not found, skipping: {src}")
+                continue
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dst)
+            logger.info(f"Synced answer: {src.relative_to(BASE_DIR)} -> {dst.relative_to(BASE_DIR)}")
+
+
+def setup_assignment(module: int, no_reset: bool = False) -> None:
+    """Installs stub files for the given module and optionally resets pipeline state."""
+    if module not in ASSIGNMENT_FILES:
+        logger.error(f"Module {module} is not configured. Available modules: {sorted(ASSIGNMENT_FILES)}")
+        return
+
+    stubs_dir = ASSIGNMENTS_DIR / f"module{module}" / "stubs"
+    logger.info(f"Installing stubs for Module {module}...")
+    for rel_path in ASSIGNMENT_FILES[module]:
+        src = stubs_dir / rel_path
+        dst = BASE_DIR / rel_path
+        if not src.exists():
+            logger.error(f"Stub file not found: {src}")
+            continue
+        shutil.copy2(src, dst)
+        logger.info(f"Installed stub: {dst.relative_to(BASE_DIR)}")
+
+    if module == 5:
+        logger.info("Injecting duplicate parquet files for the deduplication exercise...")
+        inject_duplicate_parquets()
+
+    if not no_reset:
+        confirm = input("\nReset Dagster, dlt, and warehouse state? [Y/n]: ").strip().lower()
+        if confirm in ("", "y"):
+            reset_dagster()
+            reset_dlt()
+            reset_warehouse()
+            init_env(no_prompt=True)
+
+    readme = ASSIGNMENTS_DIR / f"module{module}" / "README.md"
+    logger.info(f"\nAssignment ready! Read the instructions at:\n  {readme}")
+
+
+def restore_assignment(module: int, no_reset: bool = False) -> None:
+    """Restores the answer key files for the given module over the live files.
+
+    If students want to see the finished solution (or recover from a broken state), this
+    copies the answer files back. Run sync-answers first if the live models have changed.
+    """
+    if module not in ASSIGNMENT_FILES:
+        logger.error(f"Module {module} is not configured. Available modules: {sorted(ASSIGNMENT_FILES)}")
+        return
+
+    answers_dir = ASSIGNMENTS_DIR / f"module{module}" / "answers"
+    logger.info(f"Restoring answer key for Module {module}...")
+    for rel_path in ASSIGNMENT_FILES[module]:
+        src = answers_dir / rel_path
+        dst = BASE_DIR / rel_path
+        if not src.exists():
+            logger.error(
+                f"Answer file not found: {src}\n  Run 'python manage.py sync-answers' to populate the answer keys."
+            )
+            continue
+        shutil.copy2(src, dst)
+        logger.info(f"Restored: {dst.relative_to(BASE_DIR)}")
+
+    if not no_reset:
+        confirm = input("\nReset Dagster, dlt, and warehouse state? [Y/n]: ").strip().lower()
+        if confirm in ("", "y"):
+            reset_dagster()
+            reset_dlt()
+            reset_warehouse()
+            init_env(no_prompt=True)
+
+    logger.info(f"Module {module} answer key applied.")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Manage and reset project state (Dagster, dlt, warehouse).")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -240,6 +395,32 @@ def main():
 
     subparsers.add_parser("week1", help="Reset state for week1 assignments")
 
+    assignment_parser = subparsers.add_parser(
+        "assignment", help="Install assignment stubs or restore answer key for a given module"
+    )
+    assignment_parser.add_argument(
+        "--module",
+        type=int,
+        required=True,
+        choices=sorted(ASSIGNMENT_FILES),
+        help="Module number to set up",
+    )
+    assignment_parser.add_argument(
+        "--restore",
+        action="store_true",
+        help="Restore the answer key files instead of installing stubs",
+    )
+    assignment_parser.add_argument(
+        "--no-reset",
+        action="store_true",
+        help="Skip the prompt to reset Dagster/dlt/warehouse state",
+    )
+
+    subparsers.add_parser("sync-answers", help="Sync live model files into assignments/moduleN/answers/")
+    subparsers.add_parser(
+        "cleanup-dupes", help="Remove duplicate parquet files created by the Module 5 assignment setup"
+    )
+
     args = parser.parse_args()
 
     if args.command == "reset":
@@ -262,6 +443,16 @@ def main():
         generate_source_data(args)
     elif args.command == "init-env":
         init_env(no_prompt=getattr(args, "no_prompt", False))
+    elif args.command == "assignment":
+        no_reset = getattr(args, "no_reset", False)
+        if args.restore:
+            restore_assignment(module=args.module, no_reset=no_reset)
+        else:
+            setup_assignment(module=args.module, no_reset=no_reset)
+    elif args.command == "sync-answers":
+        sync_answers()
+    elif args.command == "cleanup-dupes":
+        cleanup_duplicate_parquets()
     elif args.command == "week1":
         reset_dagster()
         reset_dlt()
