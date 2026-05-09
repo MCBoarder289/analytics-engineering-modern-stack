@@ -35,9 +35,6 @@ models:
     staging:
       +group: staging_data
       +schema: staging
-    seed_views:
-      +group: seed_data
-      +schema: ref
     data_marts:
       +group: data_marts
       +schema: mart
