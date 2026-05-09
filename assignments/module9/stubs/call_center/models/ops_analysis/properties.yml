@@ -222,24 +222,21 @@ models:
             combination_of_columns:
               - agent_id
               - call_date
-      - dbt_utils.expression_is_true:
-          arguments:
-            expression: "customer_resolution_time >= 0"
-      - dbt_utils.expression_is_true:
-          arguments:
-            expression: "avg_hold_time >= 0"
-      - dbt_utils.expression_is_true:
-          arguments:
-            expression: "transfer_rate between 0 and 1"
-      - dbt_utils.expression_is_true:
-          arguments:
-            expression: "first_call_resolution is null or (first_call_resolution >= 0 and first_call_resolution <= 1)"
-      - dbt_utils.expression_is_true:
-          arguments:
-            expression: "csat is null or (csat >= 1 and csat <= 5)"
-      - dbt_utils.expression_is_true:
-          arguments:
-            expression: "nps is null or (nps >= -100 and nps <= 100)"
+      # TODO: Add dbt_utils.expression_is_true tests to validate that derived metric columns
+      # contain sensible values. Business context for each assertion:
+      #   customer_resolution_time: Average call duration per agent per day. Since every
+      #     call must have a positive duration, this value must always be >= 0.
+      #   avg_hold_time: Average hold time per call. Hold time can be zero (no hold) but
+      #     can never be negative.
+      #   transfer_rate: Proportion of calls transferred to a manager (transfer_count /
+      #     call_count). As a rate, this must always fall between 0 and 1.
+      #   first_call_resolution: Proportion of calls resolved on first contact. As a rate,
+      #     must fall between 0 and 1. Note: this can be NULL if no FCR data was joined
+      #     (write a null-safe assertion).
+      #   csat: Average CSAT score across surveys. Based on a 1-5 scale, so the average
+      #     must also fall within that range. NULL when no surveys were received.
+      #   nps: Net Promoter Score. Ranges from -100 (all detractors) to 100 (all promoters).
+      #     NULL when no surveys were received.
 
   - name: daily_agent_manager_metrics
     description: "Daily performance scorecard for each agent broken out by manager assignment, combining call, FCR, and survey metrics. One row per agent per manager per day."
@@ -313,24 +310,8 @@ models:
               - agent_id
               - manager_id
               - call_date
-      - dbt_utils.expression_is_true:
-          arguments:
-            expression: "customer_resolution_time >= 0"
-      - dbt_utils.expression_is_true:
-          arguments:
-            expression: "avg_hold_time >= 0"
-      - dbt_utils.expression_is_true:
-          arguments:
-            expression: "transfer_rate between 0 and 1"
-      - dbt_utils.expression_is_true:
-          arguments:
-            expression: "first_call_resolution is null or (first_call_resolution >= 0 and first_call_resolution <= 1)"
-      - dbt_utils.expression_is_true:
-          arguments:
-            expression: "csat is null or (csat >= 1 and csat <= 5)"
-      - dbt_utils.expression_is_true:
-          arguments:
-            expression: "nps is null or (nps >= -100 and nps <= 100)"
+      # TODO: Add the same set of dbt_utils.expression_is_true tests as daily_agent_metrics
+      # (same metrics, same business rules — this model just adds the manager dimension).
 
   - name: monthly_agent_metrics
     description: "Monthly performance scorecard for each agent, combining call, FCR, and survey metrics rolled up from daily source models. One row per agent per month."
@@ -387,24 +368,8 @@ models:
             combination_of_columns:
               - agent_id
               - call_month
-      - dbt_utils.expression_is_true:
-          arguments:
-            expression: "customer_resolution_time >= 0"
-      - dbt_utils.expression_is_true:
-          arguments:
-            expression: "avg_hold_time >= 0"
-      - dbt_utils.expression_is_true:
-          arguments:
-            expression: "transfer_rate between 0 and 1"
-      - dbt_utils.expression_is_true:
-          arguments:
-            expression: "first_call_resolution is null or (first_call_resolution >= 0 and first_call_resolution <= 1)"
-      - dbt_utils.expression_is_true:
-          arguments:
-            expression: "csat is null or (csat >= 1 and csat <= 5)"
-      - dbt_utils.expression_is_true:
-          arguments:
-            expression: "nps is null or (nps >= -100 and nps <= 100)"
+      # TODO: Add the same set of dbt_utils.expression_is_true tests as daily_agent_metrics.
+      # The same business rules apply at the monthly grain.
 
   - name: monthly_agent_manager_metrics
     description: "Monthly performance scorecard for each agent broken out by manager assignment, combining call, FCR, and survey metrics. One row per agent per manager per month."
@@ -472,24 +437,8 @@ models:
               - agent_id
               - manager_id
               - call_month
-      - dbt_utils.expression_is_true:
-          arguments:
-            expression: "customer_resolution_time >= 0"
-      - dbt_utils.expression_is_true:
-          arguments:
-            expression: "avg_hold_time >= 0"
-      - dbt_utils.expression_is_true:
-          arguments:
-            expression: "transfer_rate between 0 and 1"
-      - dbt_utils.expression_is_true:
-          arguments:
-            expression: "first_call_resolution is null or (first_call_resolution >= 0 and first_call_resolution <= 1)"
-      - dbt_utils.expression_is_true:
-          arguments:
-            expression: "csat is null or (csat >= 1 and csat <= 5)"
-      - dbt_utils.expression_is_true:
-          arguments:
-            expression: "nps is null or (nps >= -100 and nps <= 100)"
+      # TODO: Add the same set of dbt_utils.expression_is_true tests as daily_agent_metrics.
+      # The same business rules apply at the monthly agent-manager grain.
 
   - name: monthly_manager_metrics
     description: "Monthly performance scorecard for each manager, aggregating call, FCR, and survey metrics across all agents in their team. One row per manager per month."
@@ -546,21 +495,5 @@ models:
             combination_of_columns:
               - manager_id
               - call_month
-      - dbt_utils.expression_is_true:
-          arguments:
-            expression: "customer_resolution_time >= 0"
-      - dbt_utils.expression_is_true:
-          arguments:
-            expression: "avg_hold_time >= 0"
-      - dbt_utils.expression_is_true:
-          arguments:
-            expression: "transfer_rate between 0 and 1"
-      - dbt_utils.expression_is_true:
-          arguments:
-            expression: "first_call_resolution is null or (first_call_resolution >= 0 and first_call_resolution <= 1)"
-      - dbt_utils.expression_is_true:
-          arguments:
-            expression: "csat is null or (csat >= 1 and csat <= 5)"
-      - dbt_utils.expression_is_true:
-          arguments:
-            expression: "nps is null or (nps >= -100 and nps <= 100)"
+      # TODO: Add the same set of dbt_utils.expression_is_true tests as daily_agent_metrics.
+      # The same business rules apply at the monthly manager grain.
