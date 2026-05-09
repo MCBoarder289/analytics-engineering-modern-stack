@@ -59,7 +59,7 @@ ASSIGNMENT_FILES: dict[int, list[str]] = {
         "call_center/models/ops_analysis/daily_agent_metrics.sql",
         "call_center/models/ops_analysis/monthly_agent_metrics.sql",
         "call_center/models/ops_analysis/daily_agent_manager_metrics.sql",
-        "call_center/models/ops_analysis/monthly_agent_manger_metrics.sql",
+        "call_center/models/ops_analysis/monthly_agent_manager_metrics.sql",
         "call_center/models/ops_analysis/monthly_manager_metrics.sql",
     ],
 }
