@@ -16,9 +16,13 @@ Our ingestion layer (dlt) reads Parquet files from a local filesystem and loads 
 Each time a file is processed, dlt records a `load_id` and an `inserted_at` timestamp in a
 metadata table called `_dlt_loads`.
 
-A re-ingestion event (e.g., a pipeline retry or a backfill) can cause the same source record to
-appear in the raw table **more than once** — once for each load that processed it. Each copy has
+In some pipelines you encounter in the industry, a re-ingestion event (e.g., a pipeline retry or a backfill) can cause 
+the same source record to appear in the raw table **more than once** — once for each load that processed it. Each copy has
 the same business key (`call_id`, `crm_id`, `survey_id`) but a different `_dlt_load_id`.
+
+Our process actually leverages dlt's incremental cursor, which will ensure that a file is only processed once,
+essentially preventing this issue. But that doesn't mean that there isn't bad data within the files themselves.
+Often in industry, you'll have duplicates or bad records, which is exactly what we will simulate in this assignment.
 
 The staging models are the right place to resolve this: by keeping only the **most recently
 ingested** copy of each record, we produce a clean, deduplicated silver layer.
@@ -27,9 +31,15 @@ ingested** copy of each record, we produce a clean, deduplicated silver layer.
 
 ## Setup
 
-Your instructor has already run:
+Initialize your environment if you haven't already.
+From the root of the repo directory, run the following (answer Y when prompted to reset your state):
 ```bash
-python manage.py assignment --module 5
+uv run python manage.py init-env
+```
+
+On your branch, you need to set up this scenario by running:
+```bash
+uv run python manage.py assignment --module 5
 ```
 
 This:
@@ -37,22 +47,23 @@ This:
 2. Copied a handful of source Parquet files under new filenames so dlt will re-ingest them
 3. Reset the warehouse and pipeline state so you're starting fresh
 
-Generate source data and initialize your environment if you haven't already:
-```bash
-python manage.py generate-source-data
-python manage.py init-env
-```
-
 ---
 
 ## Part 1 — Run the pipeline and observe the failures
 
-1. Open the Dagster UI and run a backfill across all partitions for the three ingestion assets:
+Spin up Dagster by navigating to the `analytics-system` directory and running `dg dev`:
+```bash
+cd analytics-system
+
+uv run dg dev
+```
+
+1. Open the [Dagster UI](http://127.0.0.1:3000) and run a backfill across all partitions for the three ingestion assets:
    - `dlt_filesystem_calls_source_calls`
    - `dlt_filesystem_crm_source_crm`
    - `dlt_filesystem_surveys_source_surveys`
 
-2. After ingestion completes, run the dbt assets (staging → marts).
+2. After ingestion completes, run the dbt assets (`seed_data` → `staging_data` → `data_marts`).
 
 3. You should see **unique test failures** on `mart_calls.call_id`, `mart_crm.crm_id`, and
    `mart_surveys.survey_id`. Take a screenshot of the failures.
@@ -85,13 +96,13 @@ what to implement. Your task:
 
 Re-run the full pipeline (ingestion → staging → marts → asset checks).
 
-All three unique tests should now pass. Take a screenshot of the passing checks.
+All asset tests should now pass. Take a screenshot of the passing checks.
 
 **Written response:**
 - Why do we deduplicate *here* in staging rather than earlier in the ingestion layer or later in
   the mart layer?
 - What would happen if two records for the same `call_id` were loaded in the *same* dlt run
-  (same `load_id`)? Would your deduplication logic still work? What would you do differently?
+  (same `load_id`)? Would your deduplication logic still work?
 
 ---
 
