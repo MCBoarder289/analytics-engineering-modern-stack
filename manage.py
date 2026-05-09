@@ -410,6 +410,8 @@ def restore_assignment(module: int, no_reset: bool = False) -> None:
         shutil.copy2(src, dst)
         logger.info(f"Restored: {dst.relative_to(BASE_DIR)}")
 
+    cleanup_duplicate_parquets()
+
     if not no_reset:
         confirm = input("\nReset Dagster, dlt, and warehouse state? [Y/n]: ").strip().lower()
         if confirm in ("", "y"):
