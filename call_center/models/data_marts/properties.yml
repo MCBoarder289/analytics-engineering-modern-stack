@@ -99,7 +99,7 @@ models:
 
       - name: created_ts
         data_type: timestamp with time zone
-        description: ""
+        description: "Timestamp when this CRM record was created in the CRM system"
 
       - name: warehouse_updated_ts
         data_type: timestamp with time zone
@@ -130,12 +130,12 @@ models:
                 field: crm_id
 
       - name: original_agent_id
-        data_type: varchar
-        description: "Agent ID that handled the original call"
+        data_type: bigint
+        description: "Unique identifier for the agent who handled the original call"
 
       - name: callback_agent_id
-        data_type: varchar
-        description: "Agent ID that handled the callback"
+        data_type: bigint
+        description: "Unique identifier for the agent who handled the callback call"
 
       - name: customer_id
         data_type: bigint
@@ -191,14 +191,19 @@ models:
             expression: "callback_created_ts > original_created_ts"
 
   - name: mart_first_call_resolution
-    description: ""
+    description: "Data mart containing a record per CRM ticket used to compute First Call Resolution (FCR) — whether a customer's issue was resolved without a same-reason callback within 3 days"
     columns:
       - name: crm_id
         data_type: bigint
+        data_tests:
+          - unique
+          - not_null
         description: "Unique identifier for the originating call's crm record"
 
       - name: agent_id
         data_type: bigint
+        data_tests:
+          - not_null
         description: "Unique identifier for the agent that handled the call"
 
       - name: agent_name
@@ -207,15 +212,33 @@ models:
 
       - name: fcr_date
         data_type: date
+        data_tests:
+          - not_null
         description: "Date that the call took place"
 
       - name: fcr_denom
         data_type: integer
-        description: "Numerical representation of the opportunity for a first call resolution"
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1]
+                quote: false
+        description: "Numerical representation of the opportunity for a first call resolution — always 1, used as the denominator when aggregating FCR rates"
 
       - name: fcr_num
         data_type: integer
-        description: "Numerical representation on whether or not the call passed first call resolution (1 is pass, 0 is fail)"
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+                quote: false
+        description: "Numerical representation of whether the call passed first call resolution (1 = resolved, 0 = had a same-reason callback within 3 days)"
+
+      - name: warehouse_updated_ts
+        data_type: timestamp with time zone
+        description: "Timestamp of when this record was loaded or changed in the data warehouse"
 
   - name: mart_surveys
     description: "Data mart containing customer survey responses and relevant dimensions"

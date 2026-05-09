@@ -1,0 +1,477 @@
+version: 2
+
+models:
+  - name: daily_agent_call_metrics_source
+    description: "Intermediate source model aggregating telephony call metrics per agent per day, enriched with manager assignment. Used as an input to agent and manager metric rollup models."
+    columns:
+      - name: agent_id
+        data_type: bigint
+        data_tests:
+          - not_null
+        description: "Unique identifier for the agent"
+
+      - name: agent_name
+        data_type: varchar
+        description: "Display name of the agent"
+
+      - name: call_date
+        data_type: date
+        data_tests:
+          - not_null
+        description: "Date the calls were handled"
+
+      - name: duration_sum
+        data_type: hugeint
+        description: "Total call duration in seconds for all calls handled by the agent on this date"
+
+      - name: agent_hold_time_sum
+        data_type: hugeint
+        description: "Total hold time in seconds across all calls handled by the agent on this date"
+
+      - name: transfer_sum
+        data_type: hugeint
+        description: "Total number of calls transferred or escalated by the agent on this date"
+
+      - name: call_count
+        data_type: bigint
+        data_tests:
+          - not_null
+        description: "Total number of calls handled by the agent on this date"
+
+      - name: manager_id
+        data_type: integer
+        data_tests:
+          - not_null
+        description: "Unique identifier for the agent's manager on this date, resolved via effective-dated agent_assignments"
+
+      - name: manager_name
+        data_type: varchar
+        description: "Display name of the agent's manager on this date"
+
+      - name: warehouse_updated_ts
+        data_type: timestamp with time zone
+        description: "Timestamp of when this record was loaded or changed in the data warehouse"
+
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - agent_id
+              - call_date
+
+  - name: daily_agent_crm_metrics_source
+    description: "Intermediate source model aggregating first call resolution (FCR) metrics per agent per day, enriched with manager assignment. Used as an input to agent and manager metric rollup models."
+    columns:
+      - name: agent_id
+        data_type: bigint
+        data_tests:
+          - not_null
+        description: "Unique identifier for the agent"
+
+      - name: agent_name
+        data_type: varchar
+        description: "Display name of the agent"
+
+      - name: call_date
+        data_type: date
+        data_tests:
+          - not_null
+        description: "Date the calls were handled (derived from FCR date)"
+
+      - name: fcr_sum
+        data_type: hugeint
+        description: "Sum of FCR numerator values for the agent on this date — counts calls that passed first call resolution"
+
+      - name: fcr_denom
+        data_type: hugeint
+        description: "Sum of FCR denominator values for the agent on this date — counts total FCR opportunities"
+
+      - name: manager_id
+        data_type: integer
+        data_tests:
+          - not_null
+        description: "Unique identifier for the agent's manager on this date, resolved via effective-dated agent_assignments"
+
+      - name: manager_name
+        data_type: varchar
+        description: "Display name of the agent's manager on this date"
+
+      - name: warehouse_updated_ts
+        data_type: timestamp with time zone
+        description: "Timestamp of when this record was loaded or changed in the data warehouse"
+
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - agent_id
+              - call_date
+
+  - name: daily_agent_survey_metrics_source
+    description: "Intermediate source model aggregating customer survey metrics per agent per survey send date, enriched with manager assignment. Used as an input to agent and manager metric rollup models."
+    columns:
+      - name: agent_id
+        data_type: bigint
+        data_tests:
+          - not_null
+        description: "Unique identifier for the agent"
+
+      - name: agent_name
+        data_type: varchar
+        description: "Display name of the agent"
+
+      - name: survey_date
+        data_type: date
+        data_tests:
+          - not_null
+        description: "Date the surveys were sent to customers"
+
+      - name: csat_sum
+        data_type: hugeint
+        description: "Sum of all CSAT scores (1-5) for surveys sent on this date for the agent"
+
+      - name: nps_calc_sum
+        data_type: hugeint
+        description: "Sum of NPS classification values (-1 = detractor, 0 = neutral, 1 = promoter) for all surveys on this date for the agent"
+
+      - name: survey_count
+        data_type: bigint
+        data_tests:
+          - not_null
+        description: "Total number of survey responses received for the agent on this date"
+
+      - name: manager_id
+        data_type: integer
+        data_tests:
+          - not_null
+        description: "Unique identifier for the agent's manager on this date, resolved via effective-dated agent_assignments"
+
+      - name: manager_name
+        data_type: varchar
+        description: "Display name of the agent's manager on this date"
+
+      - name: warehouse_updated_ts
+        data_type: timestamp with time zone
+        description: "Timestamp of when this record was loaded or changed in the data warehouse"
+
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - agent_id
+              - survey_date
+
+  - name: daily_agent_metrics
+    description: "Daily performance scorecard for each agent, combining call, FCR, and survey metrics. One row per agent per day."
+    columns:
+      - name: agent_id
+        data_type: bigint
+        data_tests:
+          - not_null
+        description: "Unique identifier for the agent"
+
+      - name: agent_name
+        data_type: varchar
+        description: "Display name of the agent"
+
+      - name: call_date
+        data_type: date
+        data_tests:
+          - not_null
+        description: "Date the metrics pertain to"
+
+      - name: call_count
+        data_type: bigint
+        data_tests:
+          - not_null
+        description: "Total number of calls handled by the agent on this date"
+
+      - name: customer_resolution_time
+        data_type: double
+        description: "Average time to resolve a customer issue from the customer's call perspective, in seconds (total call duration / call count)"
+
+      - name: avg_hold_time
+        data_type: double
+        description: "Average hold time per call in seconds for the agent on this date"
+
+      - name: transfer_rate
+        data_type: double
+        description: "Proportion of calls transferred or escalated to a manager (transfer count / call count)"
+
+      - name: first_call_resolution
+        data_type: double
+        description: "Proportion of calls resolved without a same-reason callback within 3 days (FCR numerator / FCR denominator)"
+
+      - name: survey_count
+        data_type: bigint
+        data_tests:
+          - not_null
+        description: "Total number of survey responses received for the agent on this date (0 if no surveys were returned)"
+
+      - name: csat
+        data_type: double
+        description: "Average customer satisfaction score (1–5 scale) for the agent on this date"
+
+      - name: nps
+        data_type: double
+        description: "Net Promoter Score for the agent on this date (-100 to 100), calculated as sum of promoter/neutral/detractor classifications divided by survey count, multiplied by 100"
+
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - agent_id
+              - call_date
+
+  - name: daily_agent_manager_metrics
+    description: "Daily performance scorecard for each agent broken out by manager assignment, combining call, FCR, and survey metrics. One row per agent per manager per day."
+    columns:
+      - name: agent_id
+        data_type: bigint
+        data_tests:
+          - not_null
+        description: "Unique identifier for the agent"
+
+      - name: agent_name
+        data_type: varchar
+        description: "Display name of the agent"
+
+      - name: manager_id
+        data_type: integer
+        data_tests:
+          - not_null
+        description: "Unique identifier for the agent's manager on this date"
+
+      - name: manager_name
+        data_type: varchar
+        description: "Display name of the agent's manager on this date"
+
+      - name: call_date
+        data_type: date
+        data_tests:
+          - not_null
+        description: "Date the metrics pertain to"
+
+      - name: call_count
+        data_type: bigint
+        data_tests:
+          - not_null
+        description: "Total number of calls handled by the agent on this date"
+
+      - name: customer_resolution_time
+        data_type: double
+        description: "Average time to resolve a customer issue from the customer's call perspective, in seconds (total call duration / call count)"
+
+      - name: avg_hold_time
+        data_type: double
+        description: "Average hold time per call in seconds for the agent on this date"
+
+      - name: transfer_rate
+        data_type: double
+        description: "Proportion of calls transferred or escalated to a manager (transfer count / call count)"
+
+      - name: first_call_resolution
+        data_type: double
+        description: "Proportion of calls resolved without a same-reason callback within 3 days (FCR numerator / FCR denominator)"
+
+      - name: survey_count
+        data_type: bigint
+        data_tests:
+          - not_null
+        description: "Total number of survey responses received for the agent on this date (0 if no surveys were returned)"
+
+      - name: csat
+        data_type: double
+        description: "Average customer satisfaction score (1-5 scale) for the agent on this date"
+
+      - name: nps
+        data_type: double
+        description: "Net Promoter Score for the agent on this date (-100 to 100), calculated as sum of promoter/neutral/detractor classifications divided by survey count, multiplied by 100"
+
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - agent_id
+              - manager_id
+              - call_date
+
+  - name: monthly_agent_metrics
+    description: "Monthly performance scorecard for each agent, combining call, FCR, and survey metrics rolled up from daily source models. One row per agent per month."
+    columns:
+      - name: agent_id
+        data_type: bigint
+        data_tests:
+          - not_null
+        description: "Unique identifier for the agent"
+
+      - name: agent_name
+        data_type: varchar
+        description: "Display name of the agent"
+
+      - name: call_month
+        data_type: date
+        data_tests:
+          - not_null
+        description: "First day of the month the metrics pertain to"
+
+      - name: customer_resolution_time
+        data_type: double
+        description: "Average time to resolve a customer issue from the customer's call perspective, in seconds, for the month"
+
+      - name: avg_hold_time
+        data_type: double
+        description: "Average hold time per call in seconds for the agent for the month"
+
+      - name: transfer_rate
+        data_type: double
+        description: "Proportion of calls transferred or escalated to a manager for the month"
+
+      - name: first_call_resolution
+        data_type: double
+        description: "Proportion of calls resolved without a same-reason callback within 3 days for the month"
+
+      - name: survey_count
+        data_type: bigint
+        data_tests:
+          - not_null
+        description: "Total number of survey responses received for the agent for the month (0 if no surveys were returned)"
+
+      - name: csat
+        data_type: double
+        description: "Average customer satisfaction score (1-5 scale) for the agent for the month"
+
+      - name: nps
+        data_type: double
+        description: "Net Promoter Score for the agent for the month (-100 to 100), calculated as sum of promoter/neutral/detractor classifications divided by survey count, multiplied by 100"
+
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - agent_id
+              - call_month
+
+  - name: monthly_agent_manager_metrics
+    description: "Monthly performance scorecard for each agent broken out by manager assignment, combining call, FCR, and survey metrics. One row per agent per manager per month."
+    columns:
+      - name: agent_id
+        data_type: bigint
+        data_tests:
+          - not_null
+        description: "Unique identifier for the agent"
+
+      - name: agent_name
+        data_type: varchar
+        description: "Display name of the agent"
+
+      - name: manager_id
+        data_type: integer
+        data_tests:
+          - not_null
+        description: "Unique identifier for the agent's manager for this month"
+
+      - name: manager_name
+        data_type: varchar
+        description: "Display name of the agent's manager for this month"
+
+      - name: call_month
+        data_type: date
+        data_tests:
+          - not_null
+        description: "First day of the month the metrics pertain to"
+
+      - name: customer_resolution_time
+        data_type: double
+        description: "Average time to resolve a customer issue from the customer's call perspective, in seconds, for the month"
+
+      - name: avg_hold_time
+        data_type: double
+        description: "Average hold time per call in seconds for the agent for the month"
+
+      - name: transfer_rate
+        data_type: double
+        description: "Proportion of calls transferred or escalated to a manager for the month"
+
+      - name: first_call_resolution
+        data_type: double
+        description: "Proportion of calls resolved without a same-reason callback within 3 days for the month"
+
+      - name: survey_count
+        data_type: bigint
+        data_tests:
+          - not_null
+        description: "Total number of survey responses received for the agent for the month (0 if no surveys were returned)"
+
+      - name: csat
+        data_type: double
+        description: "Average customer satisfaction score (1-5 scale) for the agent for the month"
+
+      - name: nps
+        data_type: double
+        description: "Net Promoter Score for the agent for the month (-100 to 100), calculated as sum of promoter/neutral/detractor classifications divided by survey count, multiplied by 100"
+
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - agent_id
+              - manager_id
+              - call_month
+
+  - name: monthly_manager_metrics
+    description: "Monthly performance scorecard for each manager, aggregating call, FCR, and survey metrics across all agents in their team. One row per manager per month."
+    columns:
+      - name: manager_id
+        data_type: integer
+        data_tests:
+          - not_null
+        description: "Unique identifier for the manager"
+
+      - name: manager_name
+        data_type: varchar
+        description: "Display name of the manager"
+
+      - name: call_month
+        data_type: date
+        data_tests:
+          - not_null
+        description: "First day of the month the metrics pertain to"
+
+      - name: customer_resolution_time
+        data_type: double
+        description: "Average time to resolve a customer issue from the customer's call perspective, in seconds, across the manager's team for the month"
+
+      - name: avg_hold_time
+        data_type: double
+        description: "Average hold time per call in seconds across the manager's team for the month"
+
+      - name: transfer_rate
+        data_type: double
+        description: "Proportion of calls transferred or escalated across the manager's team for the month"
+
+      - name: first_call_resolution
+        data_type: double
+        description: "Proportion of calls resolved without a same-reason callback within 3 days across the manager's team for the month"
+
+      - name: survey_count
+        data_type: bigint
+        data_tests:
+          - not_null
+        description: "Total number of survey responses received across the manager's team for the month (0 if no surveys were returned)"
+
+      - name: csat
+        data_type: double
+        description: "Average customer satisfaction score (1-5 scale) across the manager's team for the month"
+
+      - name: nps
+        data_type: double
+        description: "Net Promoter Score across the manager's team for the month (-100 to 100), calculated as sum of promoter/neutral/detractor classifications divided by survey count, multiplied by 100"
+
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - manager_id
+              - call_month
+
