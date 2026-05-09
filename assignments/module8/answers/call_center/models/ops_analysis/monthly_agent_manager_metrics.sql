@@ -82,7 +82,7 @@ daily_survey_metrics as (
         ,cast(date_trunc('month', survey_date) as date) as call_month
         ,sum(survey_count) as survey_count
         ,sum(csat_sum) / sum(survey_count) as csat
-        ,sum(nps_calc_sum) / sum(survey_count) as nps
+        ,sum(nps_calc_sum) * 100.0 / sum(survey_count) as nps
 
     from survey_metrics_src
 
@@ -111,7 +111,9 @@ select
     from daily_call_metrics as d
         left join daily_crm_metrics as c
             on d.agent_id = c.agent_id
+            and d.manager_id = c.manager_id
             and d.call_month = c.call_month
         left join daily_survey_metrics as s
             on d.agent_id = s.agent_id
+            and d.manager_id = s.manager_id
             and d.call_month = s.call_month
