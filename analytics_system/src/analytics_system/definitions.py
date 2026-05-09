@@ -1,4 +1,4 @@
-from dagster import Definitions, definitions
+import dagster as dg
 from dagster_dbt import DbtCliResource
 from dagster_dlt import DagsterDltResource
 
@@ -10,27 +10,20 @@ dlt_resource = DagsterDltResource()
 dbt_resource = DbtCliResource(project_dir=dbt_project_dir)
 
 
-@definitions
+@dg.definitions
 def defs():
-    dlt_defs = Definitions(
+    return dg.Definitions(
         assets=[
+            # dlt assets
             calls_ingestion,
             crm_ingestion,
             surveys_ingestion,
-        ],
-        resources={
-            "dlt": dlt_resource,
-        },
-    )
-
-    dbt_defs = Definitions(
-        assets=[
+            # dbt assets
             dbt_analytics,
             dbt_seeds,
         ],
         resources={
-            "dbt": dbt_resource,
+            "dlt": DagsterDltResource(),
+            "dbt": DbtCliResource(project_dir=dbt_project_dir),
         },
     )
-
-    return Definitions.merge(dbt_defs, dlt_defs)

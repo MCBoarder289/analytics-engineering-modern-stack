@@ -2,12 +2,13 @@ version: 2
 
 models:
   - name: test_agent_assignments
-    description: Tracks the temporal assignments of agents to managers
+    description: "View of the agent_assignments seed table tracking the temporal (effective-dated) assignments of agents to their managers"
     config:
       group: seed_tests
     columns:
       - name: agent_id
         data_type: bigint
+        description: "Unique identifier for the agent"
         data_tests:
           - relationships:
                 arguments:
@@ -15,6 +16,7 @@ models:
                   field: agent_id
       - name: manager_id
         data_type: bigint
+        description: "Unique identifier for the manager the agent is assigned to during this period"
         data_tests:
           - relationships:
                 arguments:
@@ -22,5 +24,7 @@ models:
                   field: manager_id
       - name: effective_start
         data_type: timestamp with time zone
+        description: "Timestamp when this agent-to-manager assignment became active"
       - name: effective_end
         data_type: timestamp with time zone
+        description: "Timestamp when this agent-to-manager assignment ended (open-ended assignments use a far-future date)"
