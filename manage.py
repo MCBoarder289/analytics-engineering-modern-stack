@@ -70,6 +70,21 @@ ASSIGNMENT_FILES: dict[int, list[str]] = {
 }
 
 
+def init_warehouse_files():
+    """Create empty DuckDB files for all warehouse databases."""
+    WAREHOUSE_DIR.mkdir(parents=True, exist_ok=True)
+    for location in [
+        INGEST_CALLS_WAREHOUSE,
+        INGEST_CRM_WAREHOUSE,
+        INGEST_SURVEYS_WAREHOUSE,
+        DEV_WAREHOUSE_PATH,
+        PROD_WAREHOUSE_PATH,
+    ]:
+        con = duckdb.connect(database=str(location))
+        con.close()
+        logger.info(f"Created {location}")
+
+
 def init_env(no_prompt=False):
     if not ENV_EXAMPLE.exists():
         logger.info(f"{ENV_EXAMPLE} does not exist. Cannot create .env.")
@@ -92,17 +107,8 @@ def init_env(no_prompt=False):
     logger.info(f"Created {ENV_FILE} with DAGSTER_HOME={DAGSTER_HOME.resolve()}")
 
     logger.info("Creating duckdb warehouse placeholders...")
+    init_warehouse_files()
 
-    for location in [
-        INGEST_CALLS_WAREHOUSE,
-        INGEST_CRM_WAREHOUSE,
-        INGEST_SURVEYS_WAREHOUSE,
-        DEV_WAREHOUSE_PATH,
-        PROD_WAREHOUSE_PATH,
-    ]:
-        con = duckdb.connect(database=str(location))
-        con.close()
-        logger.info(f"Created {location}")
 
     logger.info("Generating duckdb warehouse startup script...")
 
@@ -211,8 +217,10 @@ def reset_dlt():
 
 
 def reset_warehouse():
-    """Reset DuckDB warehouse state."""
+    """Reset DuckDB warehouse state and re-initialize empty database files."""
     _confirm_and_delete(WAREHOUSE_DIR)
+    logger.info("Re-initializing empty warehouse database files...")
+    init_warehouse_files()
 
 
 def reset_source_data():
