@@ -22,20 +22,22 @@ with source as (
   TODO: The data warehouse has received duplicate records due to an upstream re-ingestion event.
   Multiple rows can exist for the same call_id with different dlt load timestamps.
 
-  Your task: Implement a deduplication CTE called `latest_records` that:
-    1. Joins the source CTE to the dlt loads table:
-         {{ source('ingest_calls', '_dlt_loads') }}
-       matching on s._dlt_load_id = dlt.load_id to get the inserted_at timestamp.
-    2. Uses a window function (row_number) partitioned by call_id, ordered by
-       dlt.inserted_at DESC so that the most recently ingested record ranks first.
-    3. Selects these columns from the source:
-         call_id, agent_id, customer_id, queue_hold_time, start_ts, end_ts,
-         duration_s, hold_time_during_call_s, transfer_flag
-       Plus NOW() as warehouse_updated_ts.
-    4. In the final SELECT, filters to only row_number = 1.
+  Your task: Implement a deduplication CTE called `latest_records` that resolves this.
+  Each call_id should appear exactly once in the output, retaining only the most recently
+  ingested version of the record.
+
+  To determine recency, you will need to join the source CTE to the dlt loads table:
+    {{ source('ingest_calls', '_dlt_loads') }}
+  on s._dlt_load_id = dlt.load_id — this gives you the inserted_at timestamp for each load.
+
+  The final CTE must produce these columns:
+    call_id, agent_id, customer_id, queue_hold_time, start_ts, end_ts,
+    duration_s, hold_time_during_call_s, transfer_flag, NOW() as warehouse_updated_ts
 
   Hint: Without deduplication, the unique test on call_id in mart_calls will fail.
   You can observe this failure in the Dagster asset checks after running the pipeline.
+
+  Extra Hint: Think of a windowing function that will help you deduplicate the source...
 #}
 
 select
