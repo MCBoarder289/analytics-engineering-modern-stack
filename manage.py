@@ -109,7 +109,6 @@ def init_env(no_prompt=False):
     logger.info("Creating duckdb warehouse placeholders...")
     init_warehouse_files()
 
-
     logger.info("Generating duckdb warehouse startup script...")
 
     content = WAREHOUSE_STARTUP_TEMPLATE_FILE.read_text()
@@ -180,7 +179,7 @@ def init_env(no_prompt=False):
     logger.info(f"Created {PROFILES_YAML_FILE} with local warehouses.")
 
 
-def _confirm_and_delete(path: Path, preserve=None):
+def _delete_contents(path: Path, preserve=None):
     if preserve is None:
         preserve = []
     if not path.exists():
@@ -208,29 +207,29 @@ def _resolve_path(p: str | Path) -> Path:
 
 def reset_dagster():
     """Reset Dagster state (keep dagster.yaml)."""
-    _confirm_and_delete(DAGSTER_HOME, preserve=["dagster.yaml"])
+    _delete_contents(DAGSTER_HOME, preserve=["dagster.yaml"])
 
 
 def reset_dlt():
     """Reset dlt state (clear pipelines)."""
-    _confirm_and_delete(DLT_DIR)
+    _delete_contents(DLT_DIR)
 
 
 def reset_warehouse():
     """Reset DuckDB warehouse state and re-initialize empty database files."""
-    _confirm_and_delete(WAREHOUSE_DIR)
+    _delete_contents(WAREHOUSE_DIR)
     logger.info("Re-initializing empty warehouse database files...")
     init_warehouse_files()
 
 
 def reset_source_data():
     """Reset source data."""
-    _confirm_and_delete(DATA_DIR, preserve=["warehouse"])
+    _delete_contents(DATA_DIR, preserve=["warehouse"])
 
 
 def reset_metabase_data():
     """Reset metabase data."""
-    _confirm_and_delete(METABASE_DATA_PATH)
+    _delete_contents(METABASE_DATA_PATH)
 
 
 def generate_source_data(args):
