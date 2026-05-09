@@ -232,6 +232,28 @@ def reset_metabase_data():
     _delete_contents(METABASE_DATA_PATH)
 
 
+def source_data_status() -> str:
+    """
+    Check whether source data parquet files exist for all three datasets.
+
+    Returns:
+        'complete'  — all three datasets have parquet files
+        'partial'   — at least one dataset has files but another is missing/empty
+                      (running the simulation again would append and create duplicates)
+        'missing'   — none of the datasets have any parquet files
+    """
+    datasets = ("calls", "crm", "surveys")
+    has_data = []
+    for dataset in datasets:
+        dataset_dir = DATA_DIR / dataset
+        has_data.append(dataset_dir.exists() and any(dataset_dir.rglob("*.parquet")))
+
+    if all(has_data):
+        return "complete"
+    if any(has_data):
+        return "partial"
+    return "missing"
+
 def generate_source_data(args):
     """
     Run the call center simulation.
@@ -322,6 +344,23 @@ def setup_assignment(module: int, no_reset: bool = False) -> None:
         return
 
     stubs_dir = ASSIGNMENTS_DIR / f"module{module}" / "stubs"
+
+    data_status = source_data_status()
+    if data_status == "missing":
+        logger.warning("No source data found. Running generate-source-data with default settings...")
+        run_simulation(
+            seed_output_dir=_resolve_path("./call_center/seeds"),
+            parquet_output_dir=_resolve_path("./data"),
+        )
+    elif data_status == "partial":
+        logger.error(
+            "Source data is incomplete — some datasets exist but others are missing.\n"
+            "Running the simulation again would append duplicate records.\n"
+            "To fix: run 'uv run python manage.py reset source-data' then "
+            "'uv run python manage.py generate-source-data', then retry."
+        )
+        return
+
     logger.info(f"Installing stubs for Module {module}...")
     for rel_path in ASSIGNMENT_FILES[module]:
         src = stubs_dir / rel_path
