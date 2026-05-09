@@ -47,13 +47,15 @@ models:
         data_type: timestamp with time zone
         description: "Timestamp of when this record was loaded or changed in the data warehouse"
 
-    tests:
-      - dbt_utils.expression_is_true:
-          arguments:
-            expression: "end_ts > start_ts"
-      - dbt_utils.expression_is_true:
-          arguments:
-            expression: "duration_s > 0"
+    # TODO: Add model-level data integrity tests using dbt_utils.expression_is_true.
+    # Business context:
+    #   - Every call record must have an end timestamp that is strictly after its start timestamp.
+    #     A call that ends before or at the same time it started is impossible and indicates a
+    #     data quality issue in the telephony system.
+    #   - Every call must have a positive duration. A zero-second or negative-duration call cannot
+    #     represent a real interaction and should be flagged as invalid.
+    # Hint: Use the `tests:` block at the model level (not under a column) with
+    #   dbt_utils.expression_is_true and an `expression` argument.
 
   - name: stg_crm
     description: "Contains all of the records from the crm records of each call"
@@ -130,21 +132,16 @@ models:
       - name: csat
         data_type: bigint
         description: "Response to the customer satisfaction question (1 - 5 stars)"
-        data_tests:
-          - accepted_values:
-              arguments:
-                values: [1, 2, 3, 4, 5]
-                quote: false
-
+        # TODO: Add an accepted_values test enforcing the valid range for CSAT scores.
+        # Business context: Customers rate satisfaction on a 1–5 star scale. Any value
+        # outside this range is invalid and indicates a bug in the survey collection tool.
 
       - name: nps
         data_type: bigint
         description: "Response to the NPS question (On a scale of 1 - 10, how likely are you to recommend this service to a friend?)"
-        data_tests:
-          - accepted_values:
-              arguments:
-                values: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-                quote: false
+        # TODO: Add an accepted_values test enforcing the valid range for NPS scores.
+        # Business context: The NPS survey asks customers to rate likelihood-to-recommend on
+        # a 0–10 scale. Any response outside this range is invalid.
 
       - name: warehouse_updated_ts
         data_type: timestamp with time zone

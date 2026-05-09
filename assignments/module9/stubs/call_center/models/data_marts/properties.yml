@@ -55,13 +55,12 @@ models:
         data_type: timestamp with time zone
         description: "Timestamp of when this record was loaded or changed in the data warehouse"
 
-    tests:
-      - dbt_utils.expression_is_true:
-          arguments:
-            expression: "end_ts > start_ts"
-      - dbt_utils.expression_is_true:
-          arguments:
-            expression: "duration_s > 0"
+    # TODO: Add model-level data integrity tests using dbt_utils.expression_is_true.
+    # Business context:
+    #   - A call record must always end after it starts. The telephony system records both
+    #     timestamps; if end_ts <= start_ts, the record is corrupted.
+    #   - Every valid call must have a positive duration in seconds. A duration of 0 or less
+    #     cannot represent a real customer interaction.
 
   - name: mart_crm
     description: "Data mart containing all of the crm records for each call and the relevant dimensions"
@@ -228,21 +227,22 @@ models:
         data_type: integer
         data_tests:
           - not_null
-          - accepted_values:
-              arguments:
-                values: [1]
-                quote: false
         description: "Numerical representation of the opportunity for a first call resolution — always 1, used as the denominator when aggregating FCR rates"
+        # TODO: Add an accepted_values test to enforce the valid value for fcr_denom.
+        # Business context: fcr_denom represents one FCR opportunity per call. This field
+        # is used as the denominator in rate calculations and must always equal 1.
+        # Any other value would silently corrupt all downstream FCR rate metrics.
 
       - name: fcr_num
         data_type: integer
         data_tests:
           - not_null
-          - accepted_values:
-              arguments:
-                values: [0, 1]
-                quote: false
         description: "Numerical representation of whether the call passed first call resolution (1 = resolved, 0 = had a same-reason callback within 3 days)"
+        # TODO: Add an accepted_values test to enforce the valid values for fcr_num.
+        # Business context: fcr_num is a binary indicator — 1 means the call was resolved
+        # on first contact, 0 means the customer called back within 3 days about the same
+        # issue. No other values are valid; any other value indicates a logic error in the
+        # FCR model.
 
       - name: warehouse_updated_ts
         data_type: timestamp with time zone
@@ -313,17 +313,18 @@ models:
       - name: nps_calc
         data_type: integer
         description: "Calculated NPS numerator of whether the response was a promoter/neutral/detractor"
-        data_tests:
-          - accepted_values:
-              arguments:
-                values: [-1, 0, 1]
-                quote: false
+        # TODO: Add an accepted_values test to enforce the valid values for nps_calc.
+        # Business context: nps_calc is the derived classification used in NPS rate calculations:
+        #   -1 = Detractor (NPS score 0–6)
+        #    0 = Passive    (NPS score 7–8)
+        #    1 = Promoter   (NPS score 9–10)
+        # Any value other than these three indicates a logic error in the mart_surveys model.
 
       - name: warehouse_updated_ts
         data_type: timestamp with time zone
         description: "Timestamp of when this record was loaded or changed in the data warehouse"
 
-    tests:
-      - dbt_utils.expression_is_true:
-          arguments:
-            expression: "response_ts >= sent_ts"
+    # TODO: Add a model-level data integrity test using dbt_utils.expression_is_true.
+    # Business context: A survey response timestamp must always be on or after the date the
+    # survey was sent. A response_ts earlier than sent_ts is physically impossible and
+    # indicates a timestamp error in the survey platform.
