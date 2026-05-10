@@ -254,6 +254,7 @@ def source_data_status() -> str:
         return "partial"
     return "missing"
 
+
 def generate_source_data(args):
     """
     Run the call center simulation.
