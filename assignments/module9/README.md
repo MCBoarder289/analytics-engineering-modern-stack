@@ -2,7 +2,7 @@
 
 ## Overview
 
-A dbt model is only as trustworthy as its tests. In this assignment you will add **data quality
+Any data asset is only as trustworthy as its tests. In this assignment you will add **data quality
 assertions** to the `properties.yml` files across all three model layers (staging, data marts, and
 ops analysis) and verify that those tests pass in Dagster.
 
@@ -14,12 +14,15 @@ understood and resolved.
 
 ## Setup
 
+Initialize your environment if you haven't already.
+From the root of the repo directory, run the following (answer Y when prompted to reset your state):
 ```bash
-# Install the assignment stubs
-uv run python manage.py assignment --module 9
+uv run python manage.py init-env
+```
 
-# Restore the finished answer key at any point
-uv run python manage.py assignment --module 9 --restore
+On your branch, you need to set up this scenario by running:
+```bash
+uv run python manage.py assignment --module 8
 ```
 
 The command above replaces the three `properties.yml` files in your live dbt project with stub
@@ -133,6 +136,8 @@ Add `dbt_utils.expression_is_true` tests to **all five models** for the followin
 ```
 # In the Dagster UI, trigger the `call_center_dbt` asset group
 # Tests run automatically as part of the dbt execution
+
+# You can also run the "Asset Checks" from each individual asset.
 ```
 
 ### Via dbt CLI
