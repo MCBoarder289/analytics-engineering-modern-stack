@@ -17,17 +17,13 @@ with disqualifying_callbacks as (
           `previous_issue_flag` field in the CRM system. This value flows through to
           `mart_crm_callbacks` as `callback_previous_issue_flag`.
 
-          The business has decided that if an agent flags a callback as being about a previous
-          issue, that callback should ALSO disqualify the original call from first call resolution
-          — regardless of whether the reason codes match.
+          The business has decided that iff an agent determines that a call is the same reason and subreason,
+          and also flags that a callback is about a previous issue, that callback should disqualify the original call from FCR.
 
           Add `callback_previous_issue_flag` as an additional disqualifying condition here.
 
           After making this change, re-run the FCR assets and compare the resulting
           first_call_resolution rates in daily_agent_metrics vs. before your change.
-          In your written response, describe:
-            1. Did FCR go up or down? Why?
-            2. Is this a more accurate measurement of FCR? Why or why not?
         #}
         {% if is_incremental() %}
           and cast(original_created_ts as date) 
