@@ -13,13 +13,18 @@ changing that logic requires understanding both the data model and the business 
 
 ## Setup
 
-Your instructor has already run:
+Initialize your environment if you haven't already.
+From the root of the repo directory, run the following (answer Y when prompted to reset your state):
 ```bash
-python manage.py assignment --module 6
+uv run python manage.py init-env
+```
+
+On your branch, you need to set up this scenario by running:
+```bash
+uv run python manage.py assignment --module 6
 ```
 
 This replaced `mart_surveys.sql` and `mart_first_call_resolution.sql` with stub versions.
-Your environment should already be initialized and data generated from Module 5.
 
 ---
 
@@ -41,13 +46,13 @@ standard NPS classification:
 | 7 – 8     | Passive    |  **0**          |
 | 9 – 10    | Promoter   | **+1**          |
 
-The `nps_calc` field is later summed and averaged across agents to produce a score between -1
-and +1. A positive value means more promoters than detractors; negative means the opposite.
+The `nps_calc` field is later summed and averaged across agents to produce a score between -100
+and +100. A positive value means more promoters than detractors; negative means the opposite.
 
 ### Your task
 
-Open `mart_surveys.sql`. Find the `TODO` block and implement the `nps_calc` column using a
-`CASE` expression that maps the raw `nps` score to -1, 0, or +1.
+Open `mart_surveys.sql`. Find the `TODO` block and implement the `nps_calc` column using an
+expression that maps the raw `nps` score to -1, 0, or +1.
 
 After implementing, run the dbt model and verify the `accepted_values` test on `nps_calc`
 passes (valid values are -1, 0, 1).
@@ -72,22 +77,23 @@ This logic lives in the `disqualifying_callbacks` CTE in `mart_first_call_resolu
 
 ### The new data
 
-Agents have started flagging in the CRM system whether a callback is about a previous issue.
+Agents have started flagging in the CRM system whether a callback is about a previous issue because sometimes calls
+come in with the same reason codes but an actually net new issue. The system we're ingesting from provides that input.
 This field — `previous_issue_flag` — is captured per CRM record and flows through to
 `mart_crm_callbacks` as `callback_previous_issue_flag`.
 
 The business has decided:
 
-> *"If an agent flags that a callback is about a previous issue, that callback should disqualify
-> the original call from FCR — regardless of whether the reason codes match."*
+> *"If an agent determines that a call is the same reason and subreason, and also flags that a callback is about a previous issue, 
+> that callback should disqualify the original call from FCR."*
 
 ### Your task
 
 1. Open `mart_first_call_resolution.sql`. Find the `TODO` block in `disqualifying_callbacks`.
 
-2. Add `callback_previous_issue_flag` as an **additional disqualifying condition** using `OR`.
+2. Add `callback_previous_issue_flag` as an **additional disqualifying condition**.
    A callback now disqualifies if:
-   - It has the same reason AND sub-reason code, **OR**
+   - It has the same reason AND sub-reason code, **AND**
    - The agent flagged it as being about a previous issue
 
 3. Re-run the full dbt pipeline (you may need to do a full refresh on FCR and downstream models).
@@ -96,11 +102,11 @@ The business has decided:
 
 **Written response:**
 - Did FCR go up or down after the change? Explain why.
-- Look at `mart_crm_callbacks`. What percentage of callbacks have `callback_previous_issue_flag = true`
-  that do *not* already have matching reason codes? (These are the "new" disqualifiers your change adds.)
 - Is the updated definition more or less strict? Is it a more accurate measure of FCR? Argue your position.
 - What are the risks of changing a KPI definition mid-stream in a production analytics system?
   How would you communicate this change to stakeholders?
+- If the business wanted this logic change to take effect only after a certain date, 
+  how might you implement that in the CTE?
 
 ---
 
