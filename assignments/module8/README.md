@@ -21,16 +21,22 @@ These models sit at the top of the `ops_analysis/` directory and answer question
 | Silver | `stg_*`, `mart_*`                 | Cleaned, deduplicated, business keys     |
 | Gold   | `daily_agent_metrics`, `monthly_*` | Aggregated, dashboard-ready             |
 
-The gold layer is optimized for **reads**, not writes. BI tools (Lightdash, Metabase) query these
+The gold layer is optimized for **reads**, not writes. BI tools (Metabase, Tableau, etc.) query these
 tables directly. Getting the granularity and join keys right is critical.
 
 ---
 
 ## Setup
 
-Your instructor has run:
+Initialize your environment if you haven't already.
+From the root of the repo directory, run the following (answer Y when prompted to reset your state):
 ```bash
-python manage.py assignment --module 8
+uv run python manage.py init-env
+```
+
+On your branch, you need to set up this scenario by running:
+```bash
+uv run python manage.py assignment --module 8
 ```
 
 This replaced the ops_analysis aggregation models with stubs. The three **source models** that
@@ -63,6 +69,8 @@ Implement three aggregation CTEs from the source models:
 
 **`daily_survey_metrics`** — group by `agent_id, agent_name, survey_date` (alias as `call_date`)
 - `survey_count`, `csat`, `nps`
+- `csat` is simply computed as the average of the 1-5 (think 5 star rating)
+- `nps` needs to be computed correctly but you'll need to scale it properly so the output is between -100 an +100
 
 Final SELECT: use `daily_call_metrics` as the base. Left join the other two on `agent_id + call_date`.
 Use `coalesce(s.survey_count, 0)` — not every agent gets surveys every day.
@@ -107,13 +115,15 @@ before dividing is more accurate than averaging the rates.)
 
 After implementing all five models, run the full dbt pipeline.
 
-1. Open DuckDB (or query via Dagster) and write queries to answer:
-   - Which agent has the highest average FCR rate over the full date range?
+1. Open DuckDB and write queries to answer:
+   - Which agent has the highest average FCR rate over the full date range? Which has the lowest?
    - Which manager's team has the highest average CSAT in the most recent month?
    - Is there a correlation between `avg_hold_time` and `transfer_rate` at the agent level?
 
-2. Sketch (or build) a simple dashboard layout in Lightdash or Metabase using at least two of
+2. Bonus Points stretch: Sketch (or build) a simple dashboard layout in Metabase using at least two of
    these gold-layer tables.
+
+Include your observations in the written response section
 
 ---
 
@@ -130,6 +140,8 @@ Answer the following questions:
 3. These models are all `incremental` with `delete+insert`. What would happen if you ran a
    full refresh (`dbt run --full-refresh`) on `monthly_manager_metrics`? Why might you want to
    avoid that in production?
+
+4. Document your responses to the previous section (DuckDB queries and bonus points for plans on what a dashboard might look like)
 
 ---
 
