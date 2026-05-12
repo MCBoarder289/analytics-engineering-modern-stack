@@ -6,7 +6,7 @@ from pathlib import Path
 
 import duckdb
 
-from data_generation.call_center_simulation import main as run_simulation
+from mds.data_generation.call_center_simulation import main as run_simulation
 
 logging.basicConfig(
     level=logging.INFO,
@@ -16,7 +16,8 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-BASE_DIR = Path(__file__).parent.resolve()
+# cli.py lives at mds/src/mds/cli.py — go up four levels to reach the repo root
+BASE_DIR = Path(__file__).parent.parent.parent.parent.resolve()
 DAGSTER_HOME = BASE_DIR / "analytics_system" / ".dagster_home"
 DLT_DIR = BASE_DIR / ".dlt"
 WAREHOUSE_DIR = BASE_DIR / "data" / "warehouse"
@@ -200,7 +201,7 @@ def _delete_contents(path: Path, preserve=None):
 
 
 def _resolve_path(p: str | Path) -> Path:
-    """Resolve relative paths to be repo-root relative (next to manage.py)."""
+    """Resolve relative paths to be repo-root relative."""
     p = Path(p)
     return p if p.is_absolute() else BASE_DIR / p
 
@@ -324,7 +325,7 @@ def sync_answers() -> None:
     """Copies the current live model files into each module's answers/ directory.
 
     Run this after editing any live model file to keep the assignment answer keys in sync:
-        python manage.py sync-answers
+        uv run mds sync-answers
     """
     for module_num, file_paths in ASSIGNMENT_FILES.items():
         for rel_path in file_paths:
@@ -357,8 +358,8 @@ def setup_assignment(module: int, no_reset: bool = False) -> None:
         logger.error(
             "Source data is incomplete — some datasets exist but others are missing.\n"
             "Running the simulation again would append duplicate records.\n"
-            "To fix: run 'uv run python manage.py reset source-data' then "
-            "'uv run python manage.py generate-source-data', then retry."
+            "To fix: run 'uv run mds reset source-data' then "
+            "'uv run mds generate-source-data', then retry."
         )
         return
 
@@ -404,9 +405,7 @@ def restore_assignment(module: int, no_reset: bool = False) -> None:
         src = answers_dir / rel_path
         dst = BASE_DIR / rel_path
         if not src.exists():
-            logger.error(
-                f"Answer file not found: {src}\n  Run 'python manage.py sync-answers' to populate the answer keys."
-            )
+            logger.error(f"Answer file not found: {src}\n  Run 'uv run mds sync-answers' to populate the answer keys.")
             continue
         shutil.copy2(src, dst)
         logger.info(f"Restored: {dst.relative_to(BASE_DIR)}")
@@ -422,6 +421,40 @@ def restore_assignment(module: int, no_reset: bool = False) -> None:
             init_env(no_prompt=True)
 
     logger.info(f"Module {module} answer key applied.")
+
+
+def restore_all_assignments(no_reset: bool = False) -> None:
+    """Restores answer key files for all configured modules.
+
+    Useful when a student has set up multiple assignments without restoring and
+    needs to get back to a clean known-good state.
+    """
+    logger.info("Restoring answer keys for all modules...")
+    for module in sorted(ASSIGNMENT_FILES):
+        answers_dir = ASSIGNMENTS_DIR / f"module{module}" / "answers"
+        logger.info(f"Restoring Module {module}...")
+        for rel_path in ASSIGNMENT_FILES[module]:
+            src = answers_dir / rel_path
+            dst = BASE_DIR / rel_path
+            if not src.exists():
+                logger.error(
+                    f"Answer file not found: {src}\n  Run 'uv run mds sync-answers' to populate the answer keys."
+                )
+                continue
+            shutil.copy2(src, dst)
+            logger.info(f"  Restored: {dst.relative_to(BASE_DIR)}")
+
+    cleanup_duplicate_parquets()
+
+    if not no_reset:
+        confirm = input("\nReset Dagster, dlt, and warehouse state? [Y/n]: ").strip().lower()
+        if confirm in ("", "y"):
+            reset_dagster()
+            reset_dlt()
+            reset_warehouse()
+            init_env(no_prompt=True)
+
+    logger.info("All modules restored.")
 
 
 def main():
@@ -447,7 +480,7 @@ def main():
         help="Which components to reset",
     )
 
-    subparsers.add_parser("week1", help="Reset state for week1 assignments")
+    # subparsers.add_parser("week1", help="Reset state for week1 assignments")
 
     assignment_parser = subparsers.add_parser(
         "assignment", help="Install assignment stubs or restore answer key for a given module"
@@ -455,7 +488,6 @@ def main():
     assignment_parser.add_argument(
         "--module",
         type=int,
-        required=True,
         choices=sorted(ASSIGNMENT_FILES),
         help="Module number to set up",
     )
@@ -463,6 +495,11 @@ def main():
         "--restore",
         action="store_true",
         help="Restore the answer key files instead of installing stubs",
+    )
+    assignment_parser.add_argument(
+        "--restore-all",
+        action="store_true",
+        help="Restore answer keys for ALL modules at once (useful for recovering from a broken state)",
     )
     assignment_parser.add_argument(
         "--no-reset",
@@ -499,7 +536,11 @@ def main():
         init_env(no_prompt=getattr(args, "no_prompt", False))
     elif args.command == "assignment":
         no_reset = getattr(args, "no_reset", False)
-        if args.restore:
+        if args.restore_all:
+            restore_all_assignments(no_reset=no_reset)
+        elif args.module is None:
+            assignment_parser.error("--module is required unless --restore-all is specified")
+        elif args.restore:
             restore_assignment(module=args.module, no_reset=no_reset)
         else:
             setup_assignment(module=args.module, no_reset=no_reset)
@@ -507,29 +548,29 @@ def main():
         sync_answers()
     elif args.command == "cleanup-dupes":
         cleanup_duplicate_parquets()
-    elif args.command == "week1":
-        reset_dagster()
-        reset_dlt()
-        reset_warehouse()
-        reset_source_data()
-        reset_metabase_data()
-        init_env(no_prompt=True)
-        # generate_source_data(argparse.Namespace(global_start_date="2025-02-01", global_end_date="2025-03-20"))
-        # kickoff jobs?
-        # import subprocess
-        # def run_analytics_system_command():
-        #     cmd = [
-        #         "uv",
-        #         "run",
-        #         "dg",
-        #         "launch",
-        #         "--assets",
-        #         "dlt_filesystem_calls_source_calls",
-        #         "--partition-range",
-        #         "2025-01-06...2025-01-12",
-        #     ]
-        #     subprocess.run(cmd, cwd=BASE_DIR / "analytics_system")
-        # run_analytics_system_command()
+    # elif args.command == "week1":
+    #     reset_dagster()
+    #     reset_dlt()
+    #     reset_warehouse()
+    #     reset_source_data()
+    #     reset_metabase_data()
+    #     init_env(no_prompt=True)
+    #     generate_source_data(argparse.Namespace(global_start_date="2025-02-01", global_end_date="2025-03-20"))
+    #     kickoff jobs?
+    #     import subprocess
+    #     def run_analytics_system_command():
+    #         cmd = [
+    #             "uv",
+    #             "run",
+    #             "dg",
+    #             "launch",
+    #             "--assets",
+    #             "dlt_filesystem_calls_source_calls",
+    #             "--partition-range",
+    #             "2025-01-06...2025-01-12",
+    #         ]
+    #         subprocess.run(cmd, cwd=BASE_DIR / "analytics_system")
+    #     run_analytics_system_command()
 
 
 if __name__ == "__main__":

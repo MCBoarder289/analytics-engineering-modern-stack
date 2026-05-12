@@ -33,7 +33,7 @@ This repo will generate some data that will be used for all of the pipelines.
 
 To generate that data, simply run the following command from the top of this repository:
 ```bash
-uv run python manage.py generate-source-data
+uv run mds generate-source-data
 ```
 
 ### Setting up Dagster
@@ -42,13 +42,13 @@ To do this, you need to copy the `.env.example` file to a `.env` file and update
 
 There is a helper function to do this for you:
 ```bash
-uv run python manage.py init-env
+uv run mds init-env
 ```
 If there is a .env file present, it will ask if you want to overwrite it.
 
 If you want to do this without answering the prompts, simply pass the `-no-prompt` flag:
 ```bash
-uv run python manage.py init-env --no-prompt
+uv run mds init-env --no-prompt
 ```
 
 ### Running Dagster
@@ -105,32 +105,32 @@ You can also combine any options (dagster, dlt, warehouse, source-data) into a s
 Simply provide the options after one another, as in this example that will clear eveyrthing but the source data:
 
 ```bash
-uv run python manage.py reset dagster dlt warehouse
+uv run mds reset dagster dlt warehouse
 ```
 
 #### Clear dagster state
 ```bash
-uv run python manage.py reset dagster
+uv run mds reset dagster
 ```
 
 #### Clear dlt state
 ```bash
-uv run python manage.py reset dlt
+uv run mds reset dlt
 ```
 
 #### Clear warehouse state
 ```bash
-uv run python manage.py reset warehouse
+uv run mds reset warehouse
 ```
 
 #### Clear Metabase BI/Visualization state
 ```bash
-uv run python manage.py reset metabase
+uv run mds reset metabase
 ```
 
 #### Clear all state
 ```bash
-uv run python manage.py reset all
+uv run mds reset all
 ```
 
 ## High Level Structure of the monorepo
@@ -141,8 +141,8 @@ uv run python manage.py reset all
 ├── assignments
 ├── call_center
 ├── data
-├── data_generation
 ├── data_vis_metabase
+├── mds
 └── notes
 ```
 
@@ -159,9 +159,13 @@ In other words, this houses all of the transformation logic that models our data
 ### data
 This directory houses the raw data for each datasource, as well as the actual data warehouse duckdb files.
 
-### data_generation
-This module holds the logic the is used to simulate the call center.
-It is used by the `manage.py` cli command `generate-source-data`, and also manages the creation of the agents, managers, and their relational assignments
+### data_generation (inside `mds/`)
+This module holds the logic used to simulate the call center.
+It is used by the `mds` CLI command `generate-source-data`, and also manages the creation of the agents, managers, and their relational assignments
+
+### mds
+This is `mds` CLI package, which is a CLI to manage everything we need to setup data and state for this repo and its assignments.
+See [`mds/README.md`](mds/README.md) for full command documentation.
 
 ### data_vis_metabase
 This is where the docker logic lives that will run the [Metabase](https://www.metabase.com/) business intelligence tool.
@@ -205,8 +209,8 @@ assignments/
 Before running any assignment, make sure you have completed the standard setup:
 
 ```bash
-uv run python manage.py generate-source-data
-uv run python manage.py init-env
+uv run mds generate-source-data
+uv run mds init-env
 ```
 
 ### Student workflow
@@ -214,7 +218,7 @@ uv run python manage.py init-env
 **1. Install the assignment stubs**
 
 ```bash
-uv run python manage.py assignment --module 5
+uv run mds assignment --module 5
 ```
 
 This replaces the relevant live files with stub versions, injects any assignment-specific test
@@ -233,7 +237,7 @@ Edit the stubbed files, run the pipeline in Dagster, and verify that the dbt ass
 **4. Restore the answer key (when you're done, or if you get stuck)**
 
 ```bash
-uv run python manage.py assignment --module 5 --restore
+uv run mds assignment --module 5 --restore
 ```
 
 This copies the finished answer key files back over your working files. You can also browse the
@@ -244,7 +248,7 @@ answers directly at `assignments/module5/answers/` without overwriting your work
 **Sync answer keys after updating a live model:**
 
 ```bash
-uv run python manage.py sync-answers
+uv run mds sync-answers
 ```
 
 Run this any time you update one of the live model files so the `answers/` directories stay in
@@ -253,5 +257,5 @@ sync with the finished code.
 **Remove duplicate parquet files after Module 5:**
 
 ```bash
-uv run python manage.py cleanup-dupes
+uv run mds cleanup-dupes
 ```
