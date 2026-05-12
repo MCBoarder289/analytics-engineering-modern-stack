@@ -5,7 +5,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from data_generation import call_center_simulation
+from mds.data_generation import call_center_simulation
 
 # NOTE: In Pycharm, mark the tests directory as "Test Sources Root" to make these run from the gutter
 

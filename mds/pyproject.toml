@@ -1,0 +1,19 @@
+[project]
+name = "mds"
+version = "0.1.0"
+description = "CLI entrypoint for the Modern Data Stack course repo"
+requires-python = "==3.13.5"
+dependencies = [
+    "duckdb",
+    "faker",
+    "numpy",
+    "pandas",
+    "pyarrow",
+]
+
+[project.scripts]
+mds = "mds.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.7.3,<0.12"]
+build-backend = "uv_build"
