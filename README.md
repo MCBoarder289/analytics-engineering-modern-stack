@@ -164,7 +164,7 @@ This module holds the logic used to simulate the call center.
 It is used by the `mds` CLI command `generate-source-data`, and also manages the creation of the agents, managers, and their relational assignments
 
 ### mds
-This is `mds` CLI package, which is a CLI to manage everything we need to setup data and state for this repo and its assignments.
+This is the `mds` CLI package, which is a CLI to manage everything we need to setup data and state for this repo and its assignments.
 See [`mds/README.md`](mds/README.md) for full command documentation.
 
 ### data_vis_metabase
