@@ -2,9 +2,9 @@ import dagster as dg
 from dagster_dbt import DbtCliResource
 from dagster_dlt import DagsterDltResource
 
-from .constants import dbt_project_dir
-from .defs.dbt_assets.assets import dbt_analytics, dbt_seeds
-from .defs.filesystem_duckdb_ingest.loads import calls_ingestion, crm_ingestion, surveys_ingestion
+from analytics_system.constants import dbt_project_dir
+from analytics_system.defs.dbt_assets.assets import dbt_analytics, dbt_seeds
+from analytics_system.defs.filesystem_duckdb_ingest.loads import calls_ingestion, crm_ingestion, surveys_ingestion
 
 
 @dg.definitions
