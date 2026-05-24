@@ -86,7 +86,7 @@ def init_warehouse_files():
         logger.info(f"Created {location}")
 
 
-def init_env(no_prompt=False):
+def init_env(no_prompt: bool = False) -> None:
     if not ENV_EXAMPLE.exists():
         logger.info(f"{ENV_EXAMPLE} does not exist. Cannot create .env.")
         return
@@ -180,7 +180,7 @@ def init_env(no_prompt=False):
     logger.info(f"Created {PROFILES_YAML_FILE} with local warehouses.")
 
 
-def _delete_contents(path: Path, preserve=None):
+def _delete_contents(path: Path, preserve: list[str] | None = None) -> None:
     if preserve is None:
         preserve = []
     if not path.exists():
@@ -256,7 +256,7 @@ def source_data_status() -> str:
     return "missing"
 
 
-def generate_source_data(args):
+def generate_source_data(args: argparse.Namespace) -> None:
     """
     Run the call center simulation.
     Optionally pass overrides as a dict {param: value}.
@@ -457,7 +457,7 @@ def restore_all_assignments(no_reset: bool = False) -> None:
     logger.info("All modules restored.")
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Manage and reset project state (Dagster, dlt, warehouse).")
     subparsers = parser.add_subparsers(dest="command", required=True)
 

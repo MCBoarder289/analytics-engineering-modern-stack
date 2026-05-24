@@ -58,7 +58,7 @@ class SimulationConfig:
     write_parquet: bool = True
     tables: tuple[str, ...] = ("calls", "crm", "surveys", "agents", "managers", "agent_assignments")
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.customers_count is None:
             object.__setattr__(
                 self,
