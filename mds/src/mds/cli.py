@@ -8,12 +8,6 @@ import duckdb
 
 from mds.data_generation.call_center_simulation import main as run_simulation
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
-
 logger = logging.getLogger(__name__)
 
 # cli.py lives at mds/src/mds/cli.py — go up four levels to reach the repo root
@@ -441,6 +435,11 @@ def restore_all_assignments(no_reset: bool = False) -> None:
 
 
 def main() -> None:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
     parser = argparse.ArgumentParser(description="Manage and reset project state (Dagster, dlt, warehouse).")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
