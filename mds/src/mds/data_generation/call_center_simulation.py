@@ -481,11 +481,3 @@ def main(**overrides):
 
 if __name__ == "__main__":
     main()
-
-
-# OUTDATED: Going to model this so that dbt snapshots the value for the manager column
-# using the "check" strategy because I don't want to manage shuffling/shifting the updated_at times.
-# That will just be done when hydrating each particular assignment/exercise.
-
-# Snapshots will be harder to implement because they use the actual runtime date to establish to effective dates
-# So I'll need to generate the agent/manager relationship separately.
