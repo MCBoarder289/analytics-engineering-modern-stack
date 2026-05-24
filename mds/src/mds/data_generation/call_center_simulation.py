@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 import calendar
 import datetime
 import logging
 import random
 from dataclasses import dataclass, field, replace
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -31,7 +34,7 @@ logger = logging.getLogger(__name__)
 class SimulationConfig:
     global_start_date: datetime.date = GLOBAL_START_DATE
     global_end_date: datetime.date = GLOBAL_END_DATE
-    programs: dict = field(default_factory=lambda: PROGRAMS.copy())
+    programs: dict[str, Any] = field(default_factory=lambda: PROGRAMS.copy())
     agents_count: int = 50
     managers_count: int = 5
     customers_count: int | None = None  # see default setting below
@@ -47,7 +50,7 @@ class SimulationConfig:
     mean_seconds_between_calls: int = 600
     # Seasonality + weekday scaling
     seasonality_amplitude: float = 0.3  # +/- 30%
-    weekday_multipliers: dict = field(default_factory=lambda: WEEKDAY_MULTIPLIERS.copy())
+    weekday_multipliers: dict[int, float] = field(default_factory=lambda: WEEKDAY_MULTIPLIERS.copy())
     # Reproducibility
     rng_seed: int = 289
     output_dir: str = "../data"

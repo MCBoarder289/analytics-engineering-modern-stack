@@ -1,10 +1,10 @@
 import os
 from collections.abc import Callable, Generator
 from datetime import date, timedelta
-from typing import cast
+from typing import Any, cast
 
 import dlt
-from dagster import AssetExecutionContext, DailyPartitionsDefinition
+from dagster import AssetExecutionContext, AssetMaterialization, DailyPartitionsDefinition, MaterializeResult
 from dagster_dlt import DagsterDltResource, dlt_assets
 from dlt.extract import DltResource
 from dlt.sources.filesystem import filesystem, read_parquet
@@ -49,7 +49,7 @@ def date_range_list(start_date: str, end_date: str) -> list[str]:
     return [(start + timedelta(days=i)).isoformat() for i in range((end - start).days + 1)]
 
 
-def make_filesystem_source(dataset: str) -> Callable:
+def make_filesystem_source(dataset: str) -> Callable[..., Any]:
     """Factory that produces a named dlt source for a local parquet dataset.
 
     The source name (e.g. ``filesystem_calls_source``) must match the dlt pipeline's
@@ -83,7 +83,7 @@ def _run_partitioned(
     context: AssetExecutionContext,
     dlt_resource: DagsterDltResource,
     source_fn: Callable,
-) -> Generator:
+) -> Generator[AssetMaterialization | MaterializeResult, None, None]:
     """Runs a partitioned dlt source, handling both single-partition and range materializations.
 
     For individual partition runs (the normal backfill case), ``rows_loaded`` in the Dagster
