@@ -79,7 +79,7 @@ def _run_partitioned(
     context: AssetExecutionContext,
     dlt_resource: DagsterDltResource,
     source_fn: Callable,
-) -> Generator[AssetMaterialization | MaterializeResult, None, None]:
+) -> Generator[AssetMaterialization | MaterializeResult]:
     """Runs a partitioned dlt source, handling both single-partition and range materializations.
 
     For individual partition runs (the normal backfill case), ``rows_loaded`` in the Dagster
