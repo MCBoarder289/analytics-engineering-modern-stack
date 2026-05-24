@@ -1,4 +1,3 @@
-import os.path
 import pathlib
 
 from dagster import DailyPartitionsDefinition
@@ -14,17 +13,17 @@ warehouse_dir.mkdir(parents=True, exist_ok=True)
 dlt_dir = repo_dir / ".dlt"
 dlt_dir.mkdir(parents=True, exist_ok=True)
 
-DLT_STATE_LOCATION_ABS_PATH = os.path.abspath(dlt_dir)
+DLT_STATE_LOCATION_ABS_PATH = str(dlt_dir.resolve())
 
 dbt_project_dir = pathlib.Path(__file__).absolute().parents[3] / "call_center"
 dbt_project = DbtProject(project_dir=dbt_project_dir)
 dbt_project.prepare_if_dev()  # Had to put it here to make sure it wasn't refreshing/rebuilding dbt too often
 
-INGEST_CALLS_ABS_PATH = os.path.abspath(warehouse_dir / "ingest_calls.duckdb")
-INGEST_CRM_ABS_PATH = os.path.abspath(warehouse_dir / "ingest_crm.duckdb")
-INGEST_SURVEYS_ABS_PATH = os.path.abspath(warehouse_dir / "ingest_surveys.duckdb")
+INGEST_CALLS_ABS_PATH = str((warehouse_dir / "ingest_calls.duckdb").resolve())
+INGEST_CRM_ABS_PATH = str((warehouse_dir / "ingest_crm.duckdb").resolve())
+INGEST_SURVEYS_ABS_PATH = str((warehouse_dir / "ingest_surveys.duckdb").resolve())
 
-WAREHOUSE_FILE_ABS_PATH = os.path.abspath(warehouse_dir / "warehouse_dev.duckdb")
+WAREHOUSE_FILE_ABS_PATH = str((warehouse_dir / "warehouse_dev.duckdb").resolve())
 
 SOURCE_DATA_DIR_PATH = pathlib.Path(__file__).parents[3].resolve() / "data"
 
