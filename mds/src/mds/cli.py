@@ -86,6 +86,33 @@ def init_warehouse_files():
         logger.info(f"Created {location}")
 
 
+def _substitute_warehouse_paths(content: str) -> str:
+    """Replace placeholder paths in a template with resolved absolute warehouse paths."""
+    return (
+        content
+        .replace(
+            "/path/to/analytics-engineering-modern-stack/data/warehouse/warehouse_dev.duckdb",
+            str(DEV_WAREHOUSE_PATH.resolve()),
+        )
+        .replace(
+            "/path/to/analytics-engineering-modern-stack/data/warehouse/warehouse_prod.duckdb",
+            str(PROD_WAREHOUSE_PATH.resolve()),
+        )
+        .replace(
+            "/path/to/analytics-engineering-modern-stack/data/warehouse/ingest_calls.duckdb",
+            str(INGEST_CALLS_WAREHOUSE.resolve()),
+        )
+        .replace(
+            "/path/to/analytics-engineering-modern-stack/data/warehouse/ingest_crm.duckdb",
+            str(INGEST_CRM_WAREHOUSE.resolve()),
+        )
+        .replace(
+            "/path/to/analytics-engineering-modern-stack/data/warehouse/ingest_surveys.duckdb",
+            str(INGEST_SURVEYS_WAREHOUSE.resolve()),
+        )
+    )
+
+
 def init_env(no_prompt: bool = False) -> None:
     if not ENV_EXAMPLE.exists():
         logger.info(f"{ENV_EXAMPLE} does not exist. Cannot create .env.")
@@ -113,29 +140,7 @@ def init_env(no_prompt: bool = False) -> None:
     logger.info("Generating duckdb warehouse startup script...")
 
     content = WAREHOUSE_STARTUP_TEMPLATE_FILE.read_text(encoding="utf-8")
-    content = (
-        content
-        .replace(
-            "/path/to/analytics-engineering-modern-stack/data/warehouse/warehouse_dev.duckdb",
-            str(DEV_WAREHOUSE_PATH.resolve()),
-        )
-        .replace(
-            "/path/to/analytics-engineering-modern-stack/data/warehouse/warehouse_prod.duckdb",
-            str(PROD_WAREHOUSE_PATH.resolve()),
-        )
-        .replace(
-            "/path/to/analytics-engineering-modern-stack/data/warehouse/ingest_calls.duckdb",
-            str(INGEST_CALLS_WAREHOUSE.resolve()),
-        )
-        .replace(
-            "/path/to/analytics-engineering-modern-stack/data/warehouse/ingest_crm.duckdb",
-            str(INGEST_CRM_WAREHOUSE.resolve()),
-        )
-        .replace(
-            "/path/to/analytics-engineering-modern-stack/data/warehouse/ingest_surveys.duckdb",
-            str(INGEST_SURVEYS_WAREHOUSE.resolve()),
-        )
-    )
+    content = _substitute_warehouse_paths(content)
 
     WAREHOUSE_STARTUP_SCRIPT.write_text(content, encoding="utf-8")
 
@@ -146,29 +151,7 @@ def init_env(no_prompt: bool = False) -> None:
         return
 
     content = PROFILES_YAML_EXAMPLE.read_text(encoding="utf-8")
-    content = (
-        content
-        .replace(
-            "/path/to/analytics-engineering-modern-stack/data/warehouse/warehouse_dev.duckdb",
-            str(DEV_WAREHOUSE_PATH.resolve()),
-        )
-        .replace(
-            "/path/to/analytics-engineering-modern-stack/data/warehouse/warehouse_prod.duckdb",
-            str(PROD_WAREHOUSE_PATH.resolve()),
-        )
-        .replace(
-            "/path/to/analytics-engineering-modern-stack/data/warehouse/ingest_calls.duckdb",
-            str(INGEST_CALLS_WAREHOUSE.resolve()),
-        )
-        .replace(
-            "/path/to/analytics-engineering-modern-stack/data/warehouse/ingest_crm.duckdb",
-            str(INGEST_CRM_WAREHOUSE.resolve()),
-        )
-        .replace(
-            "/path/to/analytics-engineering-modern-stack/data/warehouse/ingest_surveys.duckdb",
-            str(INGEST_SURVEYS_WAREHOUSE.resolve()),
-        )
-    )
+    content = _substitute_warehouse_paths(content)
 
     if PROFILES_YAML_FILE.exists() and not no_prompt:
         confirm = input(f"{PROFILES_YAML_FILE} already exists. Overwrite? [y/N]: ").strip().lower()
