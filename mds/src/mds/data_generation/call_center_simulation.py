@@ -1,7 +1,6 @@
 import calendar
 import datetime
 import logging
-import os
 import random
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -243,7 +242,7 @@ def write_daily_parquet(records: list[dict], output_dir: str, table: str, date: 
     df = pd.DataFrame.from_records(records)
     day_str = date.strftime("%Y-%m-%d")
     day_dir = Path(output_dir) / table / f"day={day_str}"
-    os.makedirs(day_dir, exist_ok=True)
+    day_dir.mkdir(parents=True, exist_ok=True)
     # Find the next part number
     existing_parts = list(day_dir.glob(f"part-*-{table}.parquet"))
     part_nums = [
