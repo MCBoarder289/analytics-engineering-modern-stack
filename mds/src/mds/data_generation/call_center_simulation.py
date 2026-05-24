@@ -64,7 +64,7 @@ class SimulationConfig:
                 self.agents_count * self.calls_per_agent_per_day * 20,
             )
 
-    def with_overrides(self, **kwargs) -> "SimulationConfig":
+    def with_overrides(self, **kwargs) -> SimulationConfig:
         """Return a new SimulationConfig with some fields overridden."""
         return replace(self, **kwargs)
 
