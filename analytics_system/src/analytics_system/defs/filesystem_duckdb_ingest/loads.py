@@ -1,4 +1,3 @@
-import os
 from collections.abc import Callable, Generator
 from datetime import date, timedelta
 from typing import Any, cast
@@ -28,7 +27,7 @@ def parquet_day_partition(dataset: str, date_partition: str) -> DltResource:
     partitions are backfilled sequentially in chronological order — retroactive backfills on
     already-processed date ranges will be skipped by the cursor state.
     """
-    abs_path = os.path.abspath(os.path.join(SOURCE_DATA_DIR_PATH, f"{dataset}/day={date_partition}/"))
+    abs_path = str((SOURCE_DATA_DIR_PATH / dataset / f"day={date_partition}").resolve())
     fs = filesystem(
         f"file://{abs_path}",
         file_glob="*.parquet",
