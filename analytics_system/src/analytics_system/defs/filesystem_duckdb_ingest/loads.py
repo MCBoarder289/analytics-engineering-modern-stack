@@ -4,22 +4,19 @@ from datetime import date, timedelta
 from typing import Any, cast
 
 import dlt
-from dagster import AssetExecutionContext, AssetMaterialization, DailyPartitionsDefinition, MaterializeResult
+from dagster import AssetExecutionContext, AssetMaterialization, MaterializeResult
 from dagster_dlt import DagsterDltResource, dlt_assets
 from dlt.extract import DltResource
 from dlt.sources.filesystem import filesystem, read_parquet
 
 from analytics_system.constants import (
+    DAILY_PARTITION,
     DLT_STATE_LOCATION_ABS_PATH,
-    GLOBAL_END_DATE,
-    GLOBAL_START_DATE,
     INGEST_CALLS_ABS_PATH,
     INGEST_CRM_ABS_PATH,
     INGEST_SURVEYS_ABS_PATH,
     SOURCE_DATA_DIR_PATH,
 )
-
-daily_partitions = DailyPartitionsDefinition(start_date=GLOBAL_START_DATE, end_date=GLOBAL_END_DATE)
 
 dlt.config["normalize.parquet_normalizer.add_dlt_load_id"] = True  # TODO: Figure out why this is needed vs. config.toml
 
@@ -105,7 +102,7 @@ def _run_partitioned(
         dataset_name="raw_calls",
         destination=dlt.destinations.duckdb(INGEST_CALLS_ABS_PATH),
     ),
-    partitions_def=daily_partitions,
+    partitions_def=DAILY_PARTITION,
     group_name="raw_ingestion",
 )
 def calls_ingestion(context: AssetExecutionContext, dlt: DagsterDltResource):
@@ -123,7 +120,7 @@ def calls_ingestion(context: AssetExecutionContext, dlt: DagsterDltResource):
         dataset_name="raw_crm",
         destination=dlt.destinations.duckdb(INGEST_CRM_ABS_PATH),
     ),
-    partitions_def=daily_partitions,
+    partitions_def=DAILY_PARTITION,
     group_name="raw_ingestion",
 )
 def crm_ingestion(context: AssetExecutionContext, dlt: DagsterDltResource):
@@ -139,7 +136,7 @@ def crm_ingestion(context: AssetExecutionContext, dlt: DagsterDltResource):
         dataset_name="raw_surveys",
         destination=dlt.destinations.duckdb(INGEST_SURVEYS_ABS_PATH),
     ),
-    partitions_def=daily_partitions,
+    partitions_def=DAILY_PARTITION,
     group_name="raw_ingestion",
 )
 def surveys_ingestion(context: AssetExecutionContext, dlt: DagsterDltResource):
