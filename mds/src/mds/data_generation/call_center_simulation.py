@@ -53,7 +53,7 @@ class SimulationConfig:
     output_dir: str = "../data"
     write_csv: bool = True
     write_parquet: bool = True
-    tables: list[str] = ("calls", "crm", "surveys", "agents", "managers", "agent_assignments")
+    tables: tuple[str, ...] = ("calls", "crm", "surveys", "agents", "managers", "agent_assignments")
 
     def __post_init__(self):
         if self.customers_count is None:
