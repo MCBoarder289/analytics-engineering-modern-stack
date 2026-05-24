@@ -533,9 +533,9 @@ def main() -> None:
     elif args.command == "generate-source-data":
         generate_source_data(args)
     elif args.command == "init-env":
-        init_env(no_prompt=getattr(args, "no_prompt", False))
+        init_env(no_prompt=args.no_prompt)
     elif args.command == "assignment":
-        no_reset = getattr(args, "no_reset", False)
+        no_reset = args.no_reset
         if args.restore_all:
             restore_all_assignments(no_reset=no_reset)
         elif args.module is None:
