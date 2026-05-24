@@ -3,11 +3,9 @@ import json
 import dagster as dg
 from dagster_dbt import DbtCliResource, dbt_assets
 
-from analytics_system.constants import GLOBAL_END_DATE, GLOBAL_START_DATE, dbt_project
+from analytics_system.constants import DAILY_PARTITION, dbt_project
 
 INCREMENTAL_SELECTOR = "config.materialized:incremental"
-
-daily_partition = dg.DailyPartitionsDefinition(start_date=GLOBAL_START_DATE, end_date=GLOBAL_END_DATE)
 
 
 @dbt_assets(
@@ -22,7 +20,7 @@ def dbt_seeds(context: dg.AssetExecutionContext, dbt: DbtCliResource):
 @dbt_assets(
     manifest=dbt_project.manifest_path,
     select=INCREMENTAL_SELECTOR,
-    partitions_def=daily_partition,
+    partitions_def=DAILY_PARTITION,
     pool="duckdb_dbt",
 )
 def dbt_analytics(context: dg.AssetExecutionContext, dbt: DbtCliResource):

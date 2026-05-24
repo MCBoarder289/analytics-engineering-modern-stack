@@ -1,6 +1,7 @@
 import os.path
 import pathlib
 
+from dagster import DailyPartitionsDefinition
 from dagster_dbt import DbtProject
 
 # Had to build absolute paths to route sources and destinations regardless of where this code is run
@@ -29,3 +30,5 @@ SOURCE_DATA_DIR_PATH = pathlib.Path(__file__).parents[3].resolve() / "data"
 
 GLOBAL_START_DATE = "2025-01-01"
 GLOBAL_END_DATE = "2025-04-01"  # plus one from the data's largest date to line partitions up
+
+DAILY_PARTITION = DailyPartitionsDefinition(start_date=GLOBAL_START_DATE, end_date=GLOBAL_END_DATE)
