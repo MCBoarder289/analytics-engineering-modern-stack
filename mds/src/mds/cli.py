@@ -17,7 +17,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # cli.py lives at mds/src/mds/cli.py — go up four levels to reach the repo root
-BASE_DIR = Path(__file__).parent.parent.parent.parent.resolve()
+BASE_DIR = Path(__file__).parents[3].resolve()
 DAGSTER_HOME = BASE_DIR / "analytics_system" / ".dagster_home"
 DLT_DIR = BASE_DIR / ".dlt"
 WAREHOUSE_DIR = BASE_DIR / "data" / "warehouse"
