@@ -92,7 +92,7 @@ def init_env(no_prompt=False):
         return
 
     # Read the example file
-    content = ENV_EXAMPLE.read_text()
+    content = ENV_EXAMPLE.read_text(encoding="utf-8")
 
     # Replace placeholder with absolute path
     content = content.replace("/path/to/analytics_system/.dagster_home", str(DAGSTER_HOME.resolve()))
@@ -104,7 +104,7 @@ def init_env(no_prompt=False):
             logger.info("Aborting .env creation.")
             return
 
-    ENV_FILE.write_text(content)
+    ENV_FILE.write_text(content, encoding="utf-8")
     logger.info(f"Created {ENV_FILE} with DAGSTER_HOME={DAGSTER_HOME.resolve()}")
 
     logger.info("Creating duckdb warehouse placeholders...")
@@ -112,7 +112,7 @@ def init_env(no_prompt=False):
 
     logger.info("Generating duckdb warehouse startup script...")
 
-    content = WAREHOUSE_STARTUP_TEMPLATE_FILE.read_text()
+    content = WAREHOUSE_STARTUP_TEMPLATE_FILE.read_text(encoding="utf-8")
     content = (
         content
         .replace(
@@ -137,7 +137,7 @@ def init_env(no_prompt=False):
         )
     )
 
-    WAREHOUSE_STARTUP_SCRIPT.write_text(content)
+    WAREHOUSE_STARTUP_SCRIPT.write_text(content, encoding="utf-8")
 
     logger.info(f"Created {WAREHOUSE_STARTUP_SCRIPT} with local warehouses.")
 
@@ -145,7 +145,7 @@ def init_env(no_prompt=False):
         logger.error(f"{PROFILES_YAML_EXAMPLE} does not exist. Cannot create profiles.yml.")
         return
 
-    content = PROFILES_YAML_EXAMPLE.read_text()
+    content = PROFILES_YAML_EXAMPLE.read_text(encoding="utf-8")
     content = (
         content
         .replace(
@@ -176,7 +176,7 @@ def init_env(no_prompt=False):
             logger.info("Aborting profiles.yml creation.")
             return
 
-    PROFILES_YAML_FILE.write_text(content)
+    PROFILES_YAML_FILE.write_text(content, encoding="utf-8")
     logger.info(f"Created {PROFILES_YAML_FILE} with local warehouses.")
 
 
