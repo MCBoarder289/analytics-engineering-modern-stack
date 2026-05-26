@@ -14,7 +14,6 @@ dbt (data build tool) is an open-source framework that lets you transform data i
 | `models/staging/` | Light cleaning and standardization of raw source data |
 | `models/ops_analysis/` | Intermediate models for call center operational analysis |
 | `models/data_marts/` | Final, business-facing data mart models |
-| `models/seed_views/` | Views built on top of dbt seed data |
 | `seeds/` | Static CSV data (agents, managers, customers, assignments) loaded into the warehouse by dbt |
 | `tests/` | Custom data quality tests |
 | `macros/` | Reusable Jinja/SQL macros |
