@@ -8,26 +8,33 @@ Always run dbt from the **repo root** using `uv run`, passing `--project-dir` an
 
 ```bash
 # From repo root
-uv run dbt run     --project-dir call_center --profiles-dir call_center
-uv run dbt test    --project-dir call_center --profiles-dir call_center
-uv run dbt build   --project-dir call_center --profiles-dir call_center
-uv run dbt compile --project-dir call_center --profiles-dir call_center
+uv run dbt run     --project-dir call_center --profiles-dir call_center --vars '{"start_date": "2025-01-01", "end_date": "2025-01-31"}'
+uv run dbt test    --project-dir call_center --profiles-dir call_center --vars '{"start_date": "2025-01-01", "end_date": "2025-01-31"}'
+uv run dbt build   --project-dir call_center --profiles-dir call_center --vars '{"start_date": "2025-01-01", "end_date": "2025-01-31"}'
+uv run dbt compile --project-dir call_center --profiles-dir call_center --vars '{"start_date": "2025-01-01", "end_date": "2025-01-31"}'
 uv run dbt docs generate --project-dir call_center --profiles-dir call_center
+```
+
+> **`--vars` required:** All incremental models use `start_date` and `end_date` variables to filter data windows. These must be supplied for any command that executes model SQL (`run`, `build`, `test`, `compile`). Use `--full-refresh` instead to rebuild all models from scratch without date filtering.
+
+```bash
+# Full rebuild (no vars needed)
+uv run dbt build --project-dir call_center --profiles-dir call_center --full-refresh
 ```
 
 ### Model Selectors
 
 ```bash
 # Run a specific layer
-uv run dbt run --project-dir call_center --profiles-dir call_center --select staging
-uv run dbt run --project-dir call_center --profiles-dir call_center --select data_marts
-uv run dbt run --project-dir call_center --profiles-dir call_center --select ops_analysis
+uv run dbt run --project-dir call_center --profiles-dir call_center --select staging --vars '{"start_date": "2025-01-01", "end_date": "2025-01-31"}'
+uv run dbt run --project-dir call_center --profiles-dir call_center --select data_marts --vars '{"start_date": "2025-01-01", "end_date": "2025-01-31"}'
+uv run dbt run --project-dir call_center --profiles-dir call_center --select ops_analysis --vars '{"start_date": "2025-01-01", "end_date": "2025-01-31"}'
 
 # Run a model and all its upstream dependencies
-uv run dbt run --project-dir call_center --profiles-dir call_center --select +mart_surveys
+uv run dbt run --project-dir call_center --profiles-dir call_center --select +mart_surveys --vars '{"start_date": "2025-01-01", "end_date": "2025-01-31"}'
 
 # Run only a specific model
-uv run dbt run --project-dir call_center --profiles-dir call_center --select stg_calls
+uv run dbt run --project-dir call_center --profiles-dir call_center --select stg_calls --vars '{"start_date": "2025-01-01", "end_date": "2025-01-31"}'
 ```
 
 ## Project Structure
@@ -89,6 +96,7 @@ In normal operation, seeds are loaded by Dagster as part of the pipeline. Only r
 
 - dbt runs via the **root venv** — always use `uv run dbt` from the repo root with explicit `--project-dir` and `--profiles-dir` flags.
 - Do **not** `cd` into `call_center/` and run bare `dbt` commands unless you have activated the root venv manually.
+- **All incremental models require `--vars '{"start_date": "...", "end_date": "..."}'`** — omitting them causes a compilation error. Use `--full-refresh` to bypass incremental logic entirely.
 - SQL files use DuckDB dialect. Avoid Snowflake/BigQuery/Redshift-specific syntax.
 - The warehouse file is `data/warehouse_dev.duckdb` at the repo root. Dagster must have run at least the ingestion assets before dbt models can be built.
 - `target/` and `dbt_packages/` are gitignored — don't commit them.

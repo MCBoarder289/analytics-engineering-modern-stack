@@ -28,6 +28,16 @@ cd ./analytics_system
 uv sync
 ```
 
+### Installing dbt Packages
+
+After setting up your virtual environments, install the dbt packages used by the `call_center` project from the top level of this repo:
+
+```bash
+uv run dbt deps --project-dir call_center --profiles-dir call_center
+```
+
+This downloads packages declared in `call_center/packages.yml` (such as `dbt_utils`) into `dbt_packages/`. This step is required before running any dbt commands and must be re-run any time `packages.yml` changes.
+
 ### Generating data
 This repo will generate some data that will be used for all of the pipelines.
 

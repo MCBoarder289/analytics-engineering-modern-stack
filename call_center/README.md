@@ -19,3 +19,14 @@ dbt (data build tool) is an open-source framework that lets you transform data i
 | `macros/` | Reusable Jinja/SQL macros |
 | `dbt_project.yml` | Main dbt project configuration |
 | `packages.yml` | dbt package dependencies |
+
+## Setup
+
+Before running any dbt commands, install the declared packages:
+
+```bash
+# From the repo root
+uv run dbt deps --project-dir call_center --profiles-dir call_center
+```
+
+This is required after a fresh clone and any time `packages.yml` is updated.
