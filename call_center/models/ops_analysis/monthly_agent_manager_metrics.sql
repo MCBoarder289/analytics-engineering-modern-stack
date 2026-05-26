@@ -1,7 +1,7 @@
 {{
   config(
     materialized = 'incremental',
-    unique_key = ['agent_id', 'manager_id' 'call_month'],
+    unique_key = ['agent_id', 'manager_id', 'call_month'],
     incremental_strategy='delete+insert',
     tags=["daily"]
     )
@@ -107,6 +107,7 @@ select
     ,coalesce(s.survey_count, 0) as survey_count
     ,s.csat
     ,s.nps
+    ,NOW() as warehouse_updated_ts
 
     from daily_call_metrics as d
         left join daily_crm_metrics as c

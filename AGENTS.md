@@ -37,11 +37,14 @@ uv sync                          # run from repo root
 # 2. Install Dagster venv
 cd analytics_system && uv sync   # run from analytics_system/
 
-# 3. Generate synthetic source data
+# 3. Install dbt packages
 cd ..   # back to repo root
+uv run dbt deps --project-dir call_center --profiles-dir call_center
+
+# 4. Generate synthetic source data
 uv run mds generate-source-data
 
-# 4. Initialize environment files (.env, profiles.yml, warehouse SQL)
+# 5. Initialize environment files (.env, profiles.yml, warehouse SQL)
 uv run mds init-env --no-prompt
 ```
 
@@ -80,14 +83,18 @@ The dbt project lives in `call_center/`. dbt commands must be run from the **rep
 
 ```bash
 # Run from repo root, targeting the call_center/ directory
-uv run dbt run --project-dir call_center --profiles-dir call_center
-uv run dbt test --project-dir call_center --profiles-dir call_center
-uv run dbt build --project-dir call_center --profiles-dir call_center
-uv run dbt compile --project-dir call_center --profiles-dir call_center
+# NOTE: incremental models require --vars with start_date and end_date
+uv run dbt run --project-dir call_center --profiles-dir call_center --vars '{"start_date": "2025-01-01", "end_date": "2025-01-31"}'
+uv run dbt test --project-dir call_center --profiles-dir call_center --vars '{"start_date": "2025-01-01", "end_date": "2025-01-31"}'
+uv run dbt build --project-dir call_center --profiles-dir call_center --vars '{"start_date": "2025-01-01", "end_date": "2025-01-31"}'
+uv run dbt compile --project-dir call_center --profiles-dir call_center --vars '{"start_date": "2025-01-01", "end_date": "2025-01-31"}'
+
+# Full rebuild from scratch (no vars needed)
+uv run dbt build --project-dir call_center --profiles-dir call_center --full-refresh
 
 # Specific model selector
-uv run dbt run --project-dir call_center --profiles-dir call_center --select staging
-uv run dbt run --project-dir call_center --profiles-dir call_center --select +mart_surveys
+uv run dbt run --project-dir call_center --profiles-dir call_center --select staging --vars '{"start_date": "2025-01-01", "end_date": "2025-01-31"}'
+uv run dbt run --project-dir call_center --profiles-dir call_center --select +mart_surveys --vars '{"start_date": "2025-01-01", "end_date": "2025-01-31"}'
 ```
 
 See [`call_center/AGENTS.md`](call_center/AGENTS.md) for dbt-specific guidance.

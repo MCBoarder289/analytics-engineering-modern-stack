@@ -4,11 +4,13 @@ sources:
   - name: ingest_calls
     database: ingest_calls
     schema: raw_calls
+    description: "Raw telephony call records ingested via dlt from the call center telephony system"
     tables:
       - name: _dlt_loads
       - name: _dlt_pipeline_state
       - name: _dlt_version
       - name: calls
+        description: "Raw call records including agent, customer, duration, hold times, and transfer flags for each call event"
         meta:
           dagster:
             asset_key: ['dlt_filesystem_calls_source_calls']
@@ -16,11 +18,13 @@ sources:
   - name: ingest_crm
     database: ingest_crm
     schema: raw_crm
+    description: "Raw CRM records ingested via dlt representing agent-entered call disposition data for each customer interaction"
     tables:
       - name: _dlt_loads
       - name: _dlt_pipeline_state
       - name: _dlt_version
       - name: crm
+        description: "Raw CRM records including agent disposition, reason codes, and previous-issue flags per call"
         meta:
           dagster:
             asset_key: ['dlt_filesystem_crm_source_crm']
@@ -28,12 +32,13 @@ sources:
   - name: ingest_surveys
     database: ingest_surveys
     schema: raw_surveys
+    description: "Raw post-call customer survey responses ingested via dlt"
     tables:
       - name: _dlt_loads
       - name: _dlt_pipeline_state
       - name: _dlt_version
       - name: surveys
+        description: "Raw survey responses including CSAT (1–5) and NPS (1–10) scores submitted by customers following a call"
         meta:
           dagster:
             asset_key: ['dlt_filesystem_surveys_source_surveys']
-      
