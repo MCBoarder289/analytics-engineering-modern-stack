@@ -26,38 +26,42 @@ Then, activate the virtual environment:
 
 ### Setting up Dagster
 You need to make your Dagster environment persistent so that when you run assets/pipelines, those states are saved.
-To do this, you need to copy the `.env.example` file to a `.env` files and update the path to be the specific location.
+To do this, you need to copy the `.env.example` file to a `.env` file and update the path to be the specific location.
 
-There is a helper function to do this for you:
+There is a helper command to do this for you. Run it from the **repo root**:
 ```bash
-uv run python ../manage.py init-env
+cd ..
+uv run mds init-env --no-prompt
 ```
-If there is a .env file present, it will ask if you want to overwrite it.
 
 ### Cleaning up and resetting environment
 
 Because this project runs locally, there may be times when you need to clear things out and start fresh.
 The following commands should help you reset state for the various components (dlt state, warehouse state, dagster state, etc.)
-You need to run these commands from the root of this project.
+Run these commands from the **repo root**.
 
 ### Clear dagster state
 ```bash
-uv run python ../manage.py reset-dagster
+cd ..
+uv run mds reset dagster
 ```
 
 ### Clear dlt state
 ```bash
-uv run python ../manage.py reset-dlt
+cd ..
+uv run mds reset dlt
 ```
 
 ### Clear warehouse state
 ```bash
-uv run python ../manage.py reset-warehouse
+cd ..
+uv run mds reset warehouse
 ```
 
 ### Clear all state
 ```bash
-uv run python ../manage.py reset-all
+cd ..
+uv run mds reset all
 ```
 
 ### Running Dagster
