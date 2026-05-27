@@ -316,7 +316,7 @@ def sync_answers() -> None:
             logger.info(f"Synced answer: {src.relative_to(BASE_DIR)} -> {dst.relative_to(BASE_DIR)}")
 
 
-def setup_assignment(module: int, no_reset: bool = False) -> None:
+def setup_assignment(module: int, prompt_for_reset: bool = True) -> None:
     """Installs stub files for the given module and optionally resets pipeline state."""
     if module not in ASSIGNMENT_FILES:
         logger.error(f"Module {module} is not configured. Available modules: {sorted(ASSIGNMENT_FILES)}")
@@ -354,7 +354,7 @@ def setup_assignment(module: int, no_reset: bool = False) -> None:
         logger.info("Injecting duplicate parquet files for the deduplication exercise...")
         inject_duplicate_parquets()
 
-    if not no_reset:
+    if prompt_for_reset:
         confirm = input("\nReset Dagster, dlt, and warehouse state? [Y/n]: ").strip().lower()
         if confirm in ("", "y"):
             reset_dagster()
@@ -366,7 +366,7 @@ def setup_assignment(module: int, no_reset: bool = False) -> None:
     logger.info(f"\nAssignment ready! Read the instructions at:\n  {readme}")
 
 
-def restore_assignment(module: int, no_reset: bool = False) -> None:
+def restore_assignment(module: int, prompt_for_reset: bool = True) -> None:
     """Restores the answer key files for the given module over the live files.
 
     If students want to see the finished solution (or recover from a broken state), this
@@ -389,7 +389,7 @@ def restore_assignment(module: int, no_reset: bool = False) -> None:
 
     cleanup_duplicate_parquets()
 
-    if not no_reset:
+    if prompt_for_reset:
         confirm = input("\nReset Dagster, dlt, and warehouse state? [Y/n]: ").strip().lower()
         if confirm in ("", "y"):
             reset_dagster()
@@ -400,7 +400,7 @@ def restore_assignment(module: int, no_reset: bool = False) -> None:
     logger.info(f"Module {module} answer key applied.")
 
 
-def restore_all_assignments(no_reset: bool = False) -> None:
+def restore_all_assignments(prompt_for_reset: bool = True) -> None:
     """Restores answer key files for all configured modules.
 
     Useful when a student has set up multiple assignments without restoring and
@@ -423,7 +423,7 @@ def restore_all_assignments(no_reset: bool = False) -> None:
 
     cleanup_duplicate_parquets()
 
-    if not no_reset:
+    if prompt_for_reset:
         confirm = input("\nReset Dagster, dlt, and warehouse state? [Y/n]: ").strip().lower()
         if confirm in ("", "y"):
             reset_dagster()
@@ -486,7 +486,7 @@ def main() -> None:
     assignment_parser.add_argument(
         "--no-reset",
         action="store_true",
-        help="Skip the prompt to reset Dagster/dlt/warehouse state",
+        help="Skip the reset prompt; Dagster/dlt/warehouse state will not be reset",
     )
 
     subparsers.add_parser("sync-answers", help="Sync live model files into assignments/moduleN/answers/")
@@ -517,15 +517,15 @@ def main() -> None:
     elif args.command == "init-env":
         init_env(no_prompt=args.no_prompt)
     elif args.command == "assignment":
-        no_reset = args.no_reset
+        prompt_for_reset = not args.no_reset
         if args.restore_all:
-            restore_all_assignments(no_reset=no_reset)
+            restore_all_assignments(prompt_for_reset=prompt_for_reset)
         elif args.module is None:
             assignment_parser.error("--module is required unless --restore-all is specified")
         elif args.restore:
-            restore_assignment(module=args.module, no_reset=no_reset)
+            restore_assignment(module=args.module, prompt_for_reset=prompt_for_reset)
         else:
-            setup_assignment(module=args.module, no_reset=no_reset)
+            setup_assignment(module=args.module, prompt_for_reset=prompt_for_reset)
     elif args.command == "sync-answers":
         sync_answers()
     elif args.command == "cleanup-dupes":
