@@ -14,14 +14,14 @@ changing that logic requires understanding both the data model and the business 
 ## Setup
 
 Initialize your environment if you haven't already.
-From the root of the repo directory, run the following (answer Y when prompted to reset your state):
+From the root of the repo directory, run:
 ```bash
-uv run python manage.py init-env
+uv run mds init-env --no-prompt
 ```
 
 On your branch, you need to set up this scenario by running:
 ```bash
-uv run python manage.py assignment --module 6
+uv run mds assignment --module 6
 ```
 
 This replaced `mart_surveys.sql` and `mart_first_call_resolution.sql` with stub versions.
