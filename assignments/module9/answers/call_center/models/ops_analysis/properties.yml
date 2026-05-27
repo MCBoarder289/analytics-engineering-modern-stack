@@ -216,6 +216,10 @@ models:
         data_type: double
         description: "Net Promoter Score for the agent on this date (-100 to 100), calculated as sum of promoter/neutral/detractor classifications divided by survey count, multiplied by 100"
 
+      - name: warehouse_updated_ts
+        data_type: timestamp with time zone
+        description: "Timestamp of when this record was loaded or changed in the data warehouse"
+
     tests:
       - dbt_utils.unique_combination_of_columns:
           arguments:
@@ -306,6 +310,10 @@ models:
         data_type: double
         description: "Net Promoter Score for the agent on this date (-100 to 100), calculated as sum of promoter/neutral/detractor classifications divided by survey count, multiplied by 100"
 
+      - name: warehouse_updated_ts
+        data_type: timestamp with time zone
+        description: "Timestamp of when this record was loaded or changed in the data warehouse"
+
     tests:
       - dbt_utils.unique_combination_of_columns:
           arguments:
@@ -380,6 +388,10 @@ models:
       - name: nps
         data_type: double
         description: "Net Promoter Score for the agent for the month (-100 to 100), calculated as sum of promoter/neutral/detractor classifications divided by survey count, multiplied by 100"
+
+      - name: warehouse_updated_ts
+        data_type: timestamp with time zone
+        description: "Timestamp of when this record was loaded or changed in the data warehouse"
 
     tests:
       - dbt_utils.unique_combination_of_columns:
@@ -465,6 +477,10 @@ models:
         data_type: double
         description: "Net Promoter Score for the agent for the month (-100 to 100), calculated as sum of promoter/neutral/detractor classifications divided by survey count, multiplied by 100"
 
+      - name: warehouse_updated_ts
+        data_type: timestamp with time zone
+        description: "Timestamp of when this record was loaded or changed in the data warehouse"
+
     tests:
       - dbt_utils.unique_combination_of_columns:
           arguments:
@@ -539,6 +555,10 @@ models:
       - name: nps
         data_type: double
         description: "Net Promoter Score across the manager's team for the month (-100 to 100), calculated as sum of promoter/neutral/detractor classifications divided by survey count, multiplied by 100"
+
+      - name: warehouse_updated_ts
+        data_type: timestamp with time zone
+        description: "Timestamp of when this record was loaded or changed in the data warehouse"
 
     tests:
       - dbt_utils.unique_combination_of_columns:
