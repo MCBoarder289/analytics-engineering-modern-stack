@@ -55,5 +55,5 @@ with source as (
     from latest_records
 
     where
-        row_number == 1
+        row_number = 1
     

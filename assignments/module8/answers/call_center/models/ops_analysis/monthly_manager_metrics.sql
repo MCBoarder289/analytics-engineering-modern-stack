@@ -93,6 +93,7 @@ select
     ,coalesce(s.survey_count, 0) as survey_count
     ,s.csat
     ,s.nps
+    ,NOW() as warehouse_updated_ts
 
     from daily_call_metrics as d
         left join daily_crm_metrics as c
