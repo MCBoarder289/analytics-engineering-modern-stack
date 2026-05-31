@@ -96,6 +96,16 @@ cd ./data_vis_metabase
 docker compose up -d  
 ```
 
+### Shutting Down Metabase
+
+To gracefully stop and remove the Metabase containers, run:
+
+```bash
+cd ./data_vis_metabase
+
+docker compose down
+```
+
 Once your docker images are up and running, open your browser to: [http://localhost](http://localhost/).
 
 If this is your first time using the container, you need to fill out data for metabase and set up your warehouse.
