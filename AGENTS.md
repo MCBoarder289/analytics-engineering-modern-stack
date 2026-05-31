@@ -151,6 +151,9 @@ cd data_vis_metabase
 docker compose up -d
 # Open http://localhost in browser
 # Use DuckDB path: /warehouse/warehouse_dev.duckdb
+
+# Gracefully shut down Metabase and its containers
+docker compose down
 ```
 
 ## Key Files for Agents

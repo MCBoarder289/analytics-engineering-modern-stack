@@ -25,3 +25,11 @@ docker compose up -d
 Once the containers are up, open your browser to [http://localhost](http://localhost/).
 
 > See the top-level [README](../README.md) for full setup instructions, including how to configure your DuckDB warehouse connection on first launch.
+
+## Stopping Metabase
+
+To gracefully shut down Metabase and its containers, run from this directory:
+
+```bash
+docker compose down
+```
