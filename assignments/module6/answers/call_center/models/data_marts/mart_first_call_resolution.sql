@@ -12,6 +12,7 @@ with disqualifying_callbacks as (
     from {{ ref('mart_crm_callbacks') }}
     where same_reason_flag
         and same_sub_reason_flag
+        and callback_previous_issue_flag
         {% if is_incremental() %}
           and cast(original_created_ts as date) 
           between DATE '{{ var("start_date") }}' - INTERVAL '{{ var("lookback_days", 7) }} day'
