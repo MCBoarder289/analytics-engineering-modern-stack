@@ -65,8 +65,7 @@ uv run dg dev
 
 2. After ingestion completes, run the dbt assets (`seed_data` → `staging_data` → `data_marts`).
 
-3. You should see **unique test failures** on `mart_calls.call_id`, `mart_crm.crm_id`, and
-   `mart_surveys.survey_id`. Take a screenshot of the failures.
+3. You should see **unique test failures** in the staging and mart assets. Take a screenshot of the failures.
 
 **Written response (submit with your assignment):**
 - What does the `unique` test failure tell you about the data?
