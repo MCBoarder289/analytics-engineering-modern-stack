@@ -3,11 +3,11 @@ name = "analytics_system"
 requires-python = "==3.13.5"
 version = "0.1.0"
 dependencies = [
-    "dagster==1.13.6",
-    "dagster-dbt==0.29.6",
-    "dagster-dlt==0.29.6",
+    "dagster==1.13.9",
+    "dagster-dbt==0.29.9",
+    "dagster-dlt==0.29.9",
     "dbt-duckdb==1.10.1",
-    "dlt[duckdb]==1.27.0",
+    "dlt[duckdb]==1.27.2",
     "pyarrow==21.0.0",
 ]
 
