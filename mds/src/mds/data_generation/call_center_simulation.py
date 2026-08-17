@@ -282,7 +282,7 @@ def simulate_call_center(
     pending_callbacks = []
 
     customer_busy_until = {
-        cid: datetime.datetime.combine(simulation_config.global_start_date, datetime.time.min)
+        cid: datetime.datetime.combine(simulation_config.global_start_date, datetime.time.min, tzinfo=datetime.UTC)
         for cid in customers["customer_id"]
     }
 
@@ -306,9 +306,9 @@ def simulate_call_center(
 
         for _, agent_id in agents["agent_id"].items():
             n_calls = int(simulation_config.calls_per_agent_per_day * volume_mult)
-            start_time = datetime.datetime.combine(day_date, datetime.time.min) + datetime.timedelta(
-                hours=simulation_config.workday_start
-            )
+            start_time = datetime.datetime.combine(
+                day_date, datetime.time.min, tzinfo=datetime.UTC
+            ) + datetime.timedelta(hours=simulation_config.workday_start)
 
             agent_callbacks = [cb for cb in todays_callbacks if cb["agent_id"] == agent_id]
             work_items = ["new"] * n_calls + agent_callbacks
@@ -442,7 +442,9 @@ def simulate_call_center(
                             "agent_id": cb_agent["agent_id"].item(),
                         })
                         # reserve the customer until the callback day starts (prevents being chosen before)
-                        customer_busy_until[customer_id] = datetime.datetime.combine(future_day, datetime.time.min)
+                        customer_busy_until[customer_id] = datetime.datetime.combine(
+                            future_day, datetime.time.min, tzinfo=datetime.UTC
+                        )
                 # need to kick off the next call as another time after the duration of the call
                 # so the inter-arrival time will get added next time start_time is reassigned
                 start_time = end_ts
