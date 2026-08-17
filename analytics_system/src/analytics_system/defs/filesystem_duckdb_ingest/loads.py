@@ -26,10 +26,15 @@ def parquet_day_partition(dataset: str, date_partition: str) -> DltResource:
     Uses incremental loading by file_url (ascending) to make runs idempotent. This assumes
     partitions are backfilled sequentially in chronological order — retroactive backfills on
     already-processed date ranges will be skipped by the cursor state.
+
+    Path.as_uri() is used instead of a manual f"file://{path}" string to produce a valid
+    RFC 8089 file URI on all platforms. On Windows, Path.resolve() returns backslash paths
+    (e.g. C:\\Users\\...) which produce a malformed URI when interpolated directly; as_uri()
+    normalizes to forward slashes and the correct file:///C:/... form.
     """
-    abs_path = str((SOURCE_DATA_DIR_PATH / dataset / f"day={date_partition}").resolve())
+    abs_path = (SOURCE_DATA_DIR_PATH / dataset / f"day={date_partition}").resolve()
     fs = filesystem(
-        f"file://{abs_path}",
+        abs_path.as_uri(),
         file_glob="*.parquet",
         incremental=dlt.sources.incremental("file_url", row_order="asc"),
     )
