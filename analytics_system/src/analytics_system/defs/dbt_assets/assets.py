@@ -21,10 +21,12 @@ class CustomDagsterDbtTranslator(DagsterDbtTranslator):
         spec = super().get_asset_spec(manifest, unique_id, project)
 
         if unique_id.startswith("seed."):
+            # Asset key convention is "dlt_<source_name>_<resource_name>" (see loads.py) — each
+            # source has its own prefix, so these must not all share "calls_source".
             dlt_upstream_keys = [
                 dg.AssetKey("dlt_filesystem_calls_source_calls"),
-                dg.AssetKey("dlt_filesystem_calls_source_crm"),
-                dg.AssetKey("dlt_filesystem_calls_source_surveys"),
+                dg.AssetKey("dlt_filesystem_crm_source_crm"),
+                dg.AssetKey("dlt_filesystem_surveys_source_surveys"),
             ]
 
             new_deps = [dg.AssetDep(asset=key) for key in dlt_upstream_keys]
