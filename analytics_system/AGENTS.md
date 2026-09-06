@@ -129,14 +129,75 @@ flight), nor against a future dependency edge being added incorrectly again.
 If DuckDB lock races resurface outside the "materialize all" flow, consider
 one of these previously-scoped options instead of re-litigating from
 scratch:
-- **Per-file mutual exclusion locks**: use `filelock` (already a transitive
-  dependency) with one lock file per ingest DuckDB path. Each dlt ingestion
-  asset acquires only its own file's lock (preserving dlt-to-dlt
-  parallelism); both dbt asset defs acquire all three ingest-file locks, in
-  a fixed sorted order, before invoking `dbt.cli(...)`.
+- **Per-file mutual exclusion locks**: use `filelock` (a direct dependency —
+  see the dlt state race section below) with one lock file per ingest
+  DuckDB path. Each dlt ingestion asset acquires only its own file's lock
+  (preserving dlt-to-dlt parallelism); both dbt asset defs acquire all
+  three ingest-file locks, in a fixed sorted order, before invoking
+  `dbt.cli(...)`.
 - **Staging-copy redesign**: add an explicit step that copies raw tables
   from the ingest DuckDB files into `warehouse_dev.duckdb` once dlt sources
   are materialized, so downstream dbt models never attach the live ingest
   files directly. More work (touches `sources.yml`, model refs, and
   `profiles.yml`), but removes the cross-cutting `attach:` contention
   entirely and is the most parallel-friendly long-term option.
+
+## Windows dlt `state.json` Race Condition (fixed)
+
+Two Windows students hit an intermittent failure even after the "fixing dlt
+issues" / Windows-compatibility fixes had been merged:
+
+```
+PermissionError: [WinError 5] Access is denied:
+'...\.dlt\filesystem_crm_source\<tmp>' -> '...\.dlt\filesystem_crm_source\state.json'
+```
+
+**Root cause:** in `defs/filesystem_duckdb_ingest/loads.py`, all three
+`dlt.pipeline(...)` objects are constructed eagerly as `@dlt_assets`
+decorator arguments — i.e. at *module import time*, not lazily inside the
+asset function body. `dlt.Pipeline.__init__` unconditionally saves
+`.dlt/<pipeline_name>/state.json` on construction (`managed_state()` always
+calls `_save_state`, even if nothing changed), and that save's underlying
+`os.replace(tmp_path, dest_path)` is **not atomic on Windows** (dlt's own
+source comment confirms this; it is atomic on POSIX). Dagster reimports
+this module independently in multiple OS processes — one per step under the
+default `multiprocess_executor`, plus `dg dev`'s webserver and daemon
+processes on startup/workspace reload — so two processes can end up
+constructing the *same-named* pipeline at nearly the same instant, racing
+on the same `state.json` and intermittently raising `WinError 5` on
+whichever process loses the rename race. This is genuinely Windows-specific
+(not a per-student environment issue): confirmed via the vendored `dlt`
+source that `FileStorage.save_atomic` has no retry/lock logic at all, and
+confirmed unchanged between our pinned `dlt==1.26.0` and the latest release
+(`1.30.0`) at the time of investigation — no upstream fix to pick up via a
+version bump.
+
+**Fix:** `loads.py` now wraps each `dlt.pipeline(...)` construction in a
+`_locked_pipeline()` helper that acquires a `filelock.FileLock` keyed by
+`pipeline_name` (lock files live in `.dlt/`, already git-ignored) before
+constructing the pipeline object, with a 30s timeout that raises a clear
+`TimeoutError` instead of hanging indefinitely if something ever holds the
+lock too long. `filelock` was promoted from a transitive to an explicit
+direct dependency in `pyproject.toml` since first-party code now imports it.
+
+**Why this doesn't cost real parallelism:** the lock only guards the brief
+moment of constructing/attaching to a pipeline object (a small JSON
+read/write, independent of dataset size) — not the actual
+extract/normalize/load work, which happens later inside the asset function
+body via `dlt_resource.run(...)`, fully outside the lock. Each of the three
+pipelines (`filesystem_calls_source`, `filesystem_crm_source`,
+`filesystem_surveys_source`) has its own separate lock file, so they still
+construct and run fully in parallel with each other; the lock only
+serializes two processes that would otherwise race on the exact same
+pipeline's state file.
+
+**If this resurfaces or a similar race appears elsewhere:** don't reach for
+a dlt version bump — the relevant `dlt` code (`FileStorage.save_atomic` in
+`dlt/common/storages/file_storage.py`) has no Windows-aware handling at all,
+and it's confirmed still true as of the review at the time of this fix.
+`dlt` does already have a proper multi-reader/single-writer cross-process
+lock utility (`TransactionalFile` in
+`dlt/common/storages/transactional_file.py`) that would be the "correct"
+place to fix this upstream, but as of that review it wasn't wired into
+`Pipeline._save_state` anywhere in dlt's own codebase (only referenced from
+its own test file) — worth checking if a future `dlt` upgrade adopts it.
