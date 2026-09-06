@@ -1,5 +1,6 @@
 from collections.abc import Callable, Generator
 from datetime import date, timedelta
+from pathlib import Path
 from typing import Any, cast
 
 import dlt
@@ -7,6 +8,7 @@ from dagster import AssetExecutionContext, AssetMaterialization, MaterializeResu
 from dagster_dlt import DagsterDltResource, dlt_assets
 from dlt.extract import DltResource
 from dlt.sources.filesystem import filesystem, read_parquet
+from filelock import FileLock, Timeout
 
 from analytics_system.constants import (
     DAILY_PARTITION,
@@ -18,6 +20,48 @@ from analytics_system.constants import (
 )
 
 dlt.config["normalize.parquet_normalizer.add_dlt_load_id"] = True  # TODO: Figure out why this is needed vs. config.toml
+
+# Bounds how long a process will wait to *acquire* the per-pipeline construction lock below.
+# Unrelated to pipeline run duration (extract/normalize/load) — that happens later, outside the
+# lock, via dlt_resource.run(...). This only guards the brief dlt.pipeline() construction/state
+# save, so a generous-but-finite timeout just turns a would-be indefinite hang (e.g. a stuck
+# filesystem) into a clear, fail-fast error instead of a silent deadlock.
+_PIPELINE_LOCK_TIMEOUT_SECONDS = 30
+
+
+def _locked_pipeline(pipeline_name: str, dataset_name: str, destination_abs_path: str) -> dlt.Pipeline:
+    """Constructs a ``dlt.pipeline()`` under a cross-process file lock, keyed by pipeline name.
+
+    ``@dlt_assets`` evaluates its ``dlt_pipeline`` argument at *module import time*, and this
+    module gets reimported independently by multiple OS processes: each child process spawned by
+    Dagster's multiprocess executor, plus the ``dg dev`` webserver and daemon processes on
+    startup/workspace reload. ``dlt.Pipeline.__init__`` unconditionally saves
+    ``.dlt/<pipeline_name>/state.json`` (via ``managed_state()``), and that save's underlying
+    ``os.replace(tmp_path, dest_path)`` is not atomic on Windows (unlike POSIX) — two processes
+    racing to replace the same ``state.json`` at once raises ``PermissionError: [WinError 5]``.
+    Confirmed this is still unfixed as of dlt 1.30.0 (our pin is 1.26.0): dlt added Windows retry
+    handling for directory renames (``rename_tree``) but never extended it to this single-file
+    ``save_atomic`` path.
+
+    Serializing pipeline construction per pipeline_name avoids the race without limiting actual
+    ingestion (extract/normalize/load) concurrency, which happens later inside the asset function
+    body via ``dlt_resource.run(...)`` — different pipelines still construct/run fully in parallel.
+    """
+    lock_path = Path(DLT_STATE_LOCATION_ABS_PATH) / f"{pipeline_name}.lock"
+    try:
+        with FileLock(str(lock_path), timeout=_PIPELINE_LOCK_TIMEOUT_SECONDS):
+            return dlt.pipeline(
+                pipeline_name=pipeline_name,
+                pipelines_dir=DLT_STATE_LOCATION_ABS_PATH,
+                dataset_name=dataset_name,
+                destination=dlt.destinations.duckdb(destination_abs_path),
+            )
+    except Timeout as e:
+        raise TimeoutError(
+            f"Timed out after {_PIPELINE_LOCK_TIMEOUT_SECONDS}s waiting for the '{pipeline_name}' "
+            f"pipeline construction lock ({lock_path}). Another process likely holds it — check for "
+            "a hung Dagster/dlt process, or delete the .lock file if you're sure none is running."
+        ) from e
 
 
 def parquet_day_partition(dataset: str, date_partition: str) -> DltResource:
@@ -100,11 +144,10 @@ def _run_partitioned(
 @dlt_assets(
     dlt_source=filesystem_calls_source(),
     name="calls_ingestion_assets",
-    dlt_pipeline=dlt.pipeline(
+    dlt_pipeline=_locked_pipeline(
         pipeline_name="filesystem_calls_source",  # Must match the dlt.source name to avoid state key mismatches
-        pipelines_dir=DLT_STATE_LOCATION_ABS_PATH,
         dataset_name="raw_calls",
-        destination=dlt.destinations.duckdb(INGEST_CALLS_ABS_PATH),
+        destination_abs_path=INGEST_CALLS_ABS_PATH,
     ),
     partitions_def=DAILY_PARTITION,
     group_name="raw_ingestion",
@@ -118,11 +161,10 @@ def calls_ingestion(context: AssetExecutionContext, dlt: DagsterDltResource):
 @dlt_assets(
     dlt_source=filesystem_crm_source(),
     name="crm_ingestion_assets",
-    dlt_pipeline=dlt.pipeline(
+    dlt_pipeline=_locked_pipeline(
         pipeline_name="filesystem_crm_source",  # Must match the dlt.source name to avoid state key mismatches
-        pipelines_dir=DLT_STATE_LOCATION_ABS_PATH,
         dataset_name="raw_crm",
-        destination=dlt.destinations.duckdb(INGEST_CRM_ABS_PATH),
+        destination_abs_path=INGEST_CRM_ABS_PATH,
     ),
     partitions_def=DAILY_PARTITION,
     group_name="raw_ingestion",
@@ -134,11 +176,10 @@ def crm_ingestion(context: AssetExecutionContext, dlt: DagsterDltResource):
 @dlt_assets(
     dlt_source=filesystem_surveys_source(),
     name="survey_ingestion_assets",
-    dlt_pipeline=dlt.pipeline(
+    dlt_pipeline=_locked_pipeline(
         pipeline_name="filesystem_surveys_source",  # Must match the dlt.source name to avoid state key mismatches
-        pipelines_dir=DLT_STATE_LOCATION_ABS_PATH,
         dataset_name="raw_surveys",
-        destination=dlt.destinations.duckdb(INGEST_SURVEYS_ABS_PATH),
+        destination_abs_path=INGEST_SURVEYS_ABS_PATH,
     ),
     partitions_def=DAILY_PARTITION,
     group_name="raw_ingestion",
