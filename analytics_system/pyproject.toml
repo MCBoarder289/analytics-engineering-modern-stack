@@ -7,7 +7,7 @@ dependencies = [
     "dagster-dbt==0.29.7",
     "dagster-dlt==0.29.7",
     "dbt-duckdb==1.10.1",
-    "dlt[duckdb]==1.26.0",
+    "dlt[duckdb]==1.30.0",
     "filelock==3.19.1",  # used directly to serialize dlt.pipeline() state.json writes across processes
     "pyarrow==21.0.0",
     "tzdata==2025.2",  # Transitive dependency but needed to be top-level for windows folks
