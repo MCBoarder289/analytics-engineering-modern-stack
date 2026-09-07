@@ -70,6 +70,7 @@ uv run mds reset all
 # Course assignments
 uv run mds assignment --module 5           # install stubs
 uv run mds assignment --module 5 --restore # restore answer key
+uv run mds assignment --module 5 --restore --preserve-dupes  # restore, keep Module 5 dupe parquet files
 uv run mds assignment --restore-all        # recover all modules
 
 # Instructor only
