@@ -67,7 +67,13 @@ uv run mds assignment --module 5 --restore # restore the answer key
 uv run mds assignment --module 5 --no-reset  # skip the pipeline state reset prompt
 uv run mds assignment --restore-all          # restore ALL modules at once (recover from broken state)
 uv run mds assignment --restore-all --no-reset  # same, skip the pipeline reset prompt
+uv run mds assignment --module 5 --restore --preserve-dupes  # keep Module 5 duplicate parquet files
 ```
+
+On restore, you'll be prompted whether to clean up the duplicate parquet files created for the
+Module 5 exercise (default: clean them up). Pass `--preserve-dupes` to skip that prompt and keep
+the duplicates — useful when you're using restore to recover from a broken pipeline/ingestion state
+and want to keep exercising the duplicate-data scenario rather than clearing it away.
 
 Available modules: 5, 6, 8, 9
 

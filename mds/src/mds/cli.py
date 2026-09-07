@@ -366,7 +366,33 @@ def setup_assignment(module: int, prompt_for_reset: bool = True) -> None:
     logger.info(f"\nAssignment ready! Read the instructions at:\n  {readme}")
 
 
-def restore_assignment(module: int, prompt_for_reset: bool = True) -> None:
+def _cleanup_dupes_with_prompt(preserve_dupes: bool, prompt_for_dupe_cleanup: bool) -> None:
+    """Removes duplicate parquet files unless the caller opts to preserve them.
+
+    Preserving dupes is useful when the "restore" is being used to recover from a broken
+    pipeline/ingestion state (e.g. investigating a bug) rather than to finish the Module 5
+    deduplication exercise — cleaning them up would silently hide the duplicate-ingestion
+    scenario that triggered the issue in the first place.
+    """
+    if preserve_dupes:
+        logger.info("Preserving duplicate parquet files (--preserve-dupes).")
+        return
+
+    if prompt_for_dupe_cleanup:
+        confirm = input("\nClean up duplicate parquet files created for Module 5? [Y/n]: ").strip().lower()
+        if confirm not in ("", "y"):
+            logger.info("Preserving duplicate parquet files.")
+            return
+
+    cleanup_duplicate_parquets()
+
+
+def restore_assignment(
+    module: int,
+    prompt_for_reset: bool = True,
+    prompt_for_dupe_cleanup: bool = True,
+    preserve_dupes: bool = False,
+) -> None:
     """Restores the answer key files for the given module over the live files.
 
     If students want to see the finished solution (or recover from a broken state), this
@@ -387,7 +413,7 @@ def restore_assignment(module: int, prompt_for_reset: bool = True) -> None:
         shutil.copy2(src, dst)
         logger.info(f"Restored: {dst.relative_to(BASE_DIR)}")
 
-    cleanup_duplicate_parquets()
+    _cleanup_dupes_with_prompt(preserve_dupes=preserve_dupes, prompt_for_dupe_cleanup=prompt_for_dupe_cleanup)
 
     if prompt_for_reset:
         confirm = input("\nReset Dagster, dlt, and warehouse state? [Y/n]: ").strip().lower()
@@ -400,7 +426,11 @@ def restore_assignment(module: int, prompt_for_reset: bool = True) -> None:
     logger.info(f"Module {module} answer key applied.")
 
 
-def restore_all_assignments(prompt_for_reset: bool = True) -> None:
+def restore_all_assignments(
+    prompt_for_reset: bool = True,
+    prompt_for_dupe_cleanup: bool = True,
+    preserve_dupes: bool = False,
+) -> None:
     """Restores answer key files for all configured modules.
 
     Useful when a student has set up multiple assignments without restoring and
@@ -421,7 +451,7 @@ def restore_all_assignments(prompt_for_reset: bool = True) -> None:
             shutil.copy2(src, dst)
             logger.info(f"  Restored: {dst.relative_to(BASE_DIR)}")
 
-    cleanup_duplicate_parquets()
+    _cleanup_dupes_with_prompt(preserve_dupes=preserve_dupes, prompt_for_dupe_cleanup=prompt_for_dupe_cleanup)
 
     if prompt_for_reset:
         confirm = input("\nReset Dagster, dlt, and warehouse state? [Y/n]: ").strip().lower()
@@ -488,6 +518,12 @@ def main() -> None:
         action="store_true",
         help="Skip the reset prompt; Dagster/dlt/warehouse state will not be reset",
     )
+    assignment_parser.add_argument(
+        "--preserve-dupes",
+        action="store_true",
+        help="On restore, skip the duplicate-parquet cleanup prompt and keep the Module 5 "
+        "duplicate parquet files instead of removing them",
+    )
 
     subparsers.add_parser("sync-answers", help="Sync live model files into assignments/moduleN/answers/")
     subparsers.add_parser(
@@ -518,12 +554,22 @@ def main() -> None:
         init_env(no_prompt=args.no_prompt)
     elif args.command == "assignment":
         prompt_for_reset = not args.no_reset
+        prompt_for_dupe_cleanup = not args.preserve_dupes
         if args.restore_all:
-            restore_all_assignments(prompt_for_reset=prompt_for_reset)
+            restore_all_assignments(
+                prompt_for_reset=prompt_for_reset,
+                prompt_for_dupe_cleanup=prompt_for_dupe_cleanup,
+                preserve_dupes=args.preserve_dupes,
+            )
         elif args.module is None:
             assignment_parser.error("--module is required unless --restore-all is specified")
         elif args.restore:
-            restore_assignment(module=args.module, prompt_for_reset=prompt_for_reset)
+            restore_assignment(
+                module=args.module,
+                prompt_for_reset=prompt_for_reset,
+                prompt_for_dupe_cleanup=prompt_for_dupe_cleanup,
+                preserve_dupes=args.preserve_dupes,
+            )
         else:
             setup_assignment(module=args.module, prompt_for_reset=prompt_for_reset)
     elif args.command == "sync-answers":
